@@ -68,25 +68,25 @@
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3">
       <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
         <span>Load CAD Model</span>
-        <span class="text-[10px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-700/50">STL / GLB</span>
+        <span class="text-[10px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-700/50">GLB / GLTF / STL</span>
       </h2>
       <label class="block border-2 border-dashed border-slate-600 hover:border-cyan-400 rounded-lg p-2.5 text-center cursor-pointer transition bg-slate-900/40">
         <svg class="mx-auto h-5 w-5 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
         </svg>
-        <span class="text-xs text-slate-300 font-medium">Upload SolidWorks export</span>
-        <input type="file" id="cadFileInput" accept=".stl,.glb,.gltf" class="hidden">
+        <span class="text-xs text-slate-300 font-medium">Upload new .GLB / .STL</span>
+        <input type="file" id="cadFileInput" accept=".glb,.gltf,.stl" class="hidden">
       </label>
-      <div id="loadedModelName" class="mt-1.5 text-[11px] text-slate-400 truncate">Default: Planetary Gearbox</div>
+      <div id="loadedModelName" class="mt-1.5 text-[11px] text-slate-400 truncate">Loading: USSL.glb...</div>
     </div>
 
     <!-- Orientation & Standing Controls -->
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3 space-y-2.5">
       <div class="flex items-center justify-between">
-        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Fix Model Orientation</h2>
-        <span class="text-[10px] text-amber-400 font-mono">SolidWorks Axis</span>
+        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Orientation & Wheels</h2>
+        <span class="text-[10px] text-amber-400 font-mono">Axis Fix</span>
       </div>
-      <p class="text-[11px] text-slate-400 leading-tight">If lying on its side, click to stand it upright on its wheels:</p>
+      <p class="text-[11px] text-slate-400 leading-tight">If lying sideways, click to stand upright on wheels:</p>
       
       <!-- Quick Flip Buttons -->
       <div class="grid grid-cols-3 gap-1.5 pt-0.5">
@@ -172,14 +172,14 @@
 
   <!-- Instructions Banner -->
   <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 px-4 py-2 rounded-xl text-xs text-slate-300 shadow-xl pointer-events-none hidden sm:block">
-    🖱️ <strong class="text-white">Left Click + Drag:</strong> Fling Part &nbsp;|&nbsp; 🖱️ <strong class="text-white">Right Click / Background:</strong> Orbit Room
+    🖱️ <strong class="text-white">Left Click + Drag:</strong> Fling Part in 3D &nbsp;|&nbsp; 🖱️ <strong class="text-white">Right Click / Background:</strong> Orbit Room
   </div>
 
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
     // 1. EXACT ROOM DIMENSIONS (2.77m W x 5.13m L x 2.70m H)
     const ROOM_W = 2.77;
@@ -258,6 +258,12 @@
     rightWall.receiveShadow = true;
     roomGroup.add(rightWall);
 
+    // Baseboard
+    const baseboardGeo = new THREE.BoxGeometry(ROOM_W, 0.08, 0.02);
+    const bbBack = new THREE.Mesh(baseboardGeo, trimMat);
+    bbBack.position.set(0, 0.04, -halfL + 0.01);
+    roomGroup.add(bbBack);
+
     // Office Table on Left Wall
     const tableGroup = new THREE.Group();
     const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 1.40), deskTopMat);
@@ -281,7 +287,7 @@
     tableGroup.position.set(-halfW + 0.375, 0, -0.4);
     roomGroup.add(tableGroup);
 
-    // Sink placed next to curtains on right wall
+    // Sink on right wall positioned next to curtains
     const sinkGroup = new THREE.Group();
     const basin = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.22, 0.46), new THREE.MeshStandardMaterial({ color: 0xF3F4F6, roughness: 0.2 }));
     basin.position.set(0, 0.85, 0);
@@ -319,12 +325,13 @@
     scene.add(windowDaylight.target);
 
     // 4. ACTIVE MODEL & ROTATION WRAPPER
-    const activeModel = new THREE.Group(); // Handles world position
-    const modelRotator = new THREE.Group(); // Handles orientation fix
+    const activeModel = new THREE.Group(); // World position & physics
+    const modelRotator = new THREE.Group(); // Manual rotation orientation
     activeModel.add(modelRotator);
     scene.add(activeModel);
 
     let activeMesh = null;
+    let baseScaleFactor = 1.0;
 
     const physics = {
       gravity: 0.0,
@@ -336,22 +343,55 @@
       grounded: true
     };
 
-    // Helper: Snaps bottom-most vertices/geometry flat on the floor (Y = 0)
+    // Snaps lowest geometry vertices flush to Y = 0 (Floor)
     function snapToFloor() {
       if (!activeMesh) return;
       activeModel.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(modelRotator);
       const bottomY = box.min.y;
       
-      // Shift so lowest part is at Y = 0
       activeModel.position.y -= bottomY;
       physics.velocity.set(0, 0, 0);
       physics.angularVelocity.set(0, 0, 0);
       physics.grounded = true;
     }
 
-    // Default Assembly
-    function buildDefaultCADAssembly() {
+    // Process imported GLB scene
+    function setupGLBModel(imported, sourceLabel) {
+      while(modelRotator.children.length > 0) modelRotator.remove(modelRotator.children[0]);
+      modelRotator.rotation.set(0, 0, 0);
+
+      const box = new THREE.Box3().setFromObject(imported);
+      const center = box.getCenter(new THREE.Vector3());
+      imported.position.sub(center); // Center pivot
+
+      const maxDim = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
+      baseScaleFactor = 0.85 / (maxDim || 1);
+      imported.scale.setScalar(baseScaleFactor);
+
+      imported.traverse(child => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      imported.name = "cadMesh";
+      activeMesh = imported;
+      modelRotator.add(imported);
+
+      activeModel.position.set(0.15, 0, -0.8);
+      snapToFloor();
+
+      document.getElementById('loadedModelName').textContent = `Loaded: ${sourceLabel}`;
+      document.getElementById('sizeSlider').value = "1.0";
+      document.getElementById('scaleLabel').textContent = "1.00x";
+      document.getElementById('posZSlider').value = "-0.8";
+      document.getElementById('posZLabel').textContent = "-0.80m";
+    }
+
+    // Fallback procedural model if USSL.glb isn't yet committed
+    function buildDefaultFallbackAssembly() {
       while(modelRotator.children.length > 0) modelRotator.remove(modelRotator.children[0]);
 
       const cadGroup = new THREE.Group();
@@ -374,94 +414,82 @@
 
       cadGroup.name = "cadMesh";
       activeMesh = cadGroup;
+      baseScaleFactor = 1.0;
       modelRotator.add(cadGroup);
       activeModel.position.set(0.15, 0, -0.8);
       snapToFloor();
+      document.getElementById('loadedModelName').textContent = "Demo: Planetary Gearbox (Add USSL.glb to repo)";
     }
-    buildDefaultCADAssembly();
 
-    // 5. SOLIDWORKS STL/GLB LOADER
+    // 5. AUTOMATIC STARTUP LOADER FOR "USSL.glb"
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load(
+      './USSL.glb',
+      (gltf) => {
+        setupGLBModel(gltf.scene, 'USSL.glb (Default)');
+      },
+      undefined,
+      (err) => {
+        console.warn('USSL.glb not found in root, falling back to demo.', err);
+        buildDefaultFallbackAssembly();
+      }
+    );
+
+    // 6. DRAG & DROP / FILE INPUT HANDLER FOR LOCAL GLB/STL
     const cadFileInput = document.getElementById('cadFileInput');
-    const loadedModelName = document.getElementById('loadedModelName');
-
     cadFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       const filename = file.name.toLowerCase();
-      loadedModelName.textContent = `Loaded: ${file.name}`;
       const fileURL = URL.createObjectURL(file);
 
-      while(modelRotator.children.length > 0) modelRotator.remove(modelRotator.children[0]);
-      modelRotator.rotation.set(0, 0, 0); // reset rotation angles
-
-      if (filename.endsWith('.stl')) {
+      if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
+        gltfLoader.load(fileURL, (gltf) => {
+          setupGLBModel(gltf.scene, file.name);
+        });
+      } else if (filename.endsWith('.stl')) {
         const stlLoader = new STLLoader();
         stlLoader.load(fileURL, (geometry) => {
+          while(modelRotator.children.length > 0) modelRotator.remove(modelRotator.children[0]);
+          modelRotator.rotation.set(0, 0, 0);
+
           geometry.center();
           geometry.computeVertexNormals();
           geometry.computeBoundingBox();
-
-          // Auto-align default SolidWorks Z-up export to Three.js Y-up
-          geometry.rotateX(-Math.PI / 2);
+          geometry.rotateX(-Math.PI / 2); // SolidWorks Z-up alignment
 
           const bbox = geometry.boundingBox;
           const maxDim = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
-          const initialScale = 0.85 / (maxDim || 1);
+          baseScaleFactor = 0.85 / (maxDim || 1);
 
           const mat = new THREE.MeshStandardMaterial({
-            color: 0x0284c7, // Matching your blue CAD color
+            color: 0x0284c7,
             metalness: 0.65,
             roughness: 0.35
           });
 
           const mesh = new THREE.Mesh(geometry, mat);
           mesh.name = "cadMesh";
-          mesh.scale.setScalar(initialScale);
+          mesh.scale.setScalar(baseScaleFactor);
           mesh.castShadow = true;
           mesh.receiveShadow = true;
 
           activeMesh = mesh;
           modelRotator.add(mesh);
-
           activeModel.position.set(0.15, 0, -0.8);
           snapToFloor();
 
-          // Reset UI controls
+          document.getElementById('loadedModelName').textContent = `Loaded: ${file.name}`;
           document.getElementById('sizeSlider').value = "1.0";
           document.getElementById('scaleLabel').textContent = "1.00x";
           document.getElementById('posZSlider').value = "-0.8";
           document.getElementById('posZLabel').textContent = "-0.80m";
         });
-      } else if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
-        const gltfLoader = new GLTFLoader();
-        gltfLoader.load(fileURL, (gltf) => {
-          const imported = gltf.scene;
-          const box = new THREE.Box3().setFromObject(imported);
-          const center = box.getCenter(new THREE.Vector3());
-          imported.position.sub(center);
-
-          const maxDim = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
-          imported.scale.setScalar(0.85 / (maxDim || 1));
-
-          imported.traverse(child => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-
-          imported.name = "cadMesh";
-          activeMesh = imported;
-          modelRotator.add(imported);
-
-          activeModel.position.set(0.15, 0, -0.8);
-          snapToFloor();
-        });
       }
     });
 
-    // 6. ROTATION BUTTON ACTIONS (STAND UPRIGHT ON WHEELS)
+    // 7. ROTATION BUTTON ACTIONS (STAND UPRIGHT ON WHEELS)
     document.getElementById('btnFlipX').addEventListener('click', () => {
       modelRotator.rotation.x += Math.PI / 2;
       snapToFloor();
@@ -481,7 +509,7 @@
       snapToFloor();
     });
 
-    // 7. DRAG & FLING INTERACTION
+    // 8. 3D DRAG & FLING INTERACTION
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const dragPlane = new THREE.Plane();
@@ -532,7 +560,7 @@
       }
     });
 
-    // 8. PHYSICS SIMULATION
+    // 9. PHYSICS SIMULATION
     const clock = new THREE.Clock();
 
     function updateSimulation(dt) {
@@ -555,7 +583,7 @@
         activeModel.rotation.z += physics.angularVelocity.z * dt;
       }
 
-      // Walls
+      // Walls bounce
       const minX = -halfW + 0.3, maxX = halfW - 0.3;
       const minZ = -halfL + 0.3, maxZ = halfL - 0.3;
 
@@ -564,7 +592,7 @@
       if (activeModel.position.z < minZ) { activeModel.position.z = minZ; physics.velocity.z *= -physics.restitution; }
       if (activeModel.position.z > maxZ) { activeModel.position.z = maxZ; physics.velocity.z *= -physics.restitution; }
 
-      // Ground limit
+      // Floor & Ceiling limits
       if (activeModel.position.y < 0) {
         activeModel.position.y = 0;
         physics.velocity.y = Math.abs(physics.velocity.y) * physics.restitution;
@@ -576,7 +604,7 @@
       }
     }
 
-    // 9. UI EVENT LISTENERS
+    // 10. UI EVENT LISTENERS
     const sizeSlider = document.getElementById('sizeSlider');
     const scaleLabel = document.getElementById('scaleLabel');
     const posZSlider = document.getElementById('posZSlider');
@@ -588,10 +616,10 @@
     const driftLabel = document.getElementById('driftLabel');
 
     sizeSlider.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value);
-      scaleLabel.textContent = `${val.toFixed(2)}x`;
+      const multiplier = parseFloat(e.target.value);
+      scaleLabel.textContent = `${multiplier.toFixed(2)}x`;
       if (activeMesh) {
-        activeMesh.scale.setScalar(val);
+        activeMesh.scale.setScalar(baseScaleFactor * multiplier);
         snapToFloor();
       }
     });
@@ -610,13 +638,14 @@
         const d = box.max.z - box.min.z;
         const currentScale = activeMesh.scale.x;
 
-        const maxAllowedW = 1.35; // clearance between left desk & right sink
+        const maxAllowedW = 1.35; // clearance between table & sink
         const maxAllowedD = 1.80;
-        const factor = Math.min(maxAllowedW / (w / currentScale), maxAllowedD / (d / currentScale));
+        const targetScale = Math.min(maxAllowedW / (w / currentScale), maxAllowedD / (d / currentScale));
 
-        activeMesh.scale.setScalar(factor);
-        sizeSlider.value = factor.toFixed(2);
-        scaleLabel.textContent = `${factor.toFixed(2)}x`;
+        activeMesh.scale.setScalar(targetScale);
+        const relativeMultiplier = targetScale / (baseScaleFactor || 1);
+        sizeSlider.value = relativeMultiplier.toFixed(2);
+        scaleLabel.textContent = `${relativeMultiplier.toFixed(2)}x`;
 
         activeModel.position.set(0.15, 0, -1.2);
         posZSlider.value = "-1.2";
@@ -648,7 +677,7 @@
       physics.velocity.set(0, 0, 0);
     });
 
-    // 10. ANIMATION LOOP
+    // 11. ANIMATION LOOP
     function animate() {
       requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.1);
