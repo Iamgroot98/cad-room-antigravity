@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SolidWorks Room Layout - Wheeler Placement</title>
+  <title>USSL Wheeler - Room Placement</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
     {
@@ -41,7 +41,6 @@
 </head>
 <body class="text-slate-100">
 
-  <!-- 3D Viewport -->
   <canvas id="viewport"></canvas>
 
   <!-- Top Title Bar -->
@@ -49,7 +48,7 @@
     <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2.5 shadow-xl pointer-events-auto flex items-center space-x-3">
       <div class="h-3 w-3 rounded-full bg-emerald-400"></div>
       <div>
-        <h1 class="text-sm font-semibold tracking-wide text-white">Office Equipment Placement</h1>
+        <h1 class="text-sm font-semibold tracking-wide text-white">USSL Wheeler Placement</h1>
         <p class="text-xs text-slate-400">Room: 2.77m (W) × 5.13m (L) × 2.70m (H)</p>
       </div>
     </div>
@@ -59,35 +58,36 @@
       <div>X (Left/Right): <span id="tele-x" class="font-mono text-cyan-400 font-bold">0.15m</span></div>
       <div>Z (Curtains): <span id="tele-z" class="font-mono text-cyan-400 font-bold">-0.80m</span></div>
       <div>Facing: <span id="tele-rot" class="font-mono text-amber-400 font-bold">0°</span></div>
-      <div>Status: <span class="font-mono text-emerald-400 font-bold">Grounded (Wheels on Floor)</span></div>
+      <div>Status: <span class="font-mono text-emerald-400 font-bold">Wheels on Ground (Y = 0)</span></div>
     </div>
   </header>
 
   <!-- Sidebar Placement Controls -->
-  <aside class="absolute left-4 bottom-4 top-24 w-80 bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-2xl p-4 shadow-2xl overflow-y-auto custom-scroll z-10 flex flex-col space-y-4">
+  <aside class="absolute left-4 bottom-4 top-24 w-80 bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-2xl p-4 shadow-2xl overflow-y-auto custom-scroll z-10 flex flex-col space-y-3.5">
     
-    <!-- Upload Section -->
+    <!-- Model Status -->
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3">
-      <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
-        <span>Load CAD Model</span>
-        <span class="text-[10px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-700/50">GLB / STL</span>
+      <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+        <span>Active CAD Model</span>
+        <span class="text-[10px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-700/50">USSL.glb</span>
       </h2>
-      <label class="block border-2 border-dashed border-slate-600 hover:border-cyan-400 rounded-lg p-2.5 text-center cursor-pointer transition bg-slate-900/40">
-        <svg class="mx-auto h-5 w-5 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-        </svg>
-        <span class="text-xs text-slate-300 font-medium">Upload new .GLB / .STL</span>
+      <div id="loadedModelName" class="text-[12px] text-cyan-300 font-medium truncate">Loading: USSL.glb...</div>
+      
+      <!-- Optional Local File Selector fallback -->
+      <label class="mt-2 block border border-slate-600 hover:border-cyan-400 rounded-lg py-1.5 px-2 text-center cursor-pointer transition bg-slate-900/40 text-[11px] text-slate-300">
+        <span>Upload replacement GLB / STL</span>
         <input type="file" id="cadFileInput" accept=".glb,.gltf,.stl" class="hidden">
       </label>
-      <div id="loadedModelName" class="mt-1.5 text-[11px] text-slate-400 truncate">Loading: model.glb...</div>
     </div>
 
-    <!-- 90-Degree Stepper & Wheel Standing -->
+    <!-- 90-Degree Stepper & Standing Alignment -->
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-3">
-      <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">90° Step Orientation</h2>
-      <p class="text-[11px] text-slate-400 leading-tight">Rotate only by clean 90° intervals:</p>
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">90° Step Orientation</h2>
+        <span class="text-[10px] text-amber-400 font-mono">No 360° Drift</span>
+      </div>
       
-      <!-- Primary 90 degree buttons -->
+      <!-- Primary 90 degree turn buttons -->
       <div class="grid grid-cols-2 gap-2">
         <button id="btnTurn90CW" class="py-2 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-xs font-bold text-white rounded-lg transition shadow flex items-center justify-center space-x-1">
           <span>Turn +90° ↷</span>
@@ -97,9 +97,9 @@
         </button>
       </div>
 
-      <!-- Quick flip if the chassis is laying on its side -->
-      <div class="pt-1 border-t border-slate-700/60">
-        <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider block mb-1.5">Stand on Wheels (Pitch/Roll 90°)</span>
+      <!-- Wheels Alignment (In case SolidWorks coordinate frame puts it on its side) -->
+      <div class="pt-2 border-t border-slate-700/60 space-y-1.5">
+        <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider block">Align Wheels Downward</span>
         <div class="grid grid-cols-2 gap-2">
           <button id="btnPitch90" class="py-1.5 bg-amber-600/80 hover:bg-amber-500 text-xs font-semibold text-white rounded-lg transition">
             Pitch 90°
@@ -108,6 +108,9 @@
             Roll 90°
           </button>
         </div>
+        <button id="btnSnapWheels" class="w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-semibold text-cyan-300 rounded-lg transition">
+          ⚓ Re-snap Wheels to Floor
+        </button>
       </div>
     </div>
 
@@ -123,8 +126,8 @@
         </div>
         <input type="range" id="posZSlider" min="-2.1" max="1.5" step="0.05" value="-0.8" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
         <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
-          <span>Near Curtains (-2.1m)</span>
-          <span>Near Door (+1.5m)</span>
+          <span>Curtains (-2.1m)</span>
+          <span>Door (+1.5m)</span>
         </div>
       </div>
 
@@ -136,7 +139,7 @@
         </div>
         <input type="range" id="posXSlider" min="-0.75" max="0.75" step="0.05" value="0.15" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
         <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
-          <span>Table (-0.75m)</span>
+          <span>Desk (-0.75m)</span>
           <span>Center</span>
           <span>Sink (+0.75m)</span>
         </div>
@@ -160,7 +163,7 @@
 
   <!-- Instructions Banner -->
   <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 px-4 py-2 rounded-xl text-xs text-slate-300 shadow-xl pointer-events-none hidden sm:block">
-    🖱️ <strong class="text-white">Left / Right Click + Drag Background:</strong> Orbit View to inspect wheeler placement
+    🖱️ <strong class="text-white">Left/Right Click + Drag Background:</strong> Orbit View to inspect USSL placement
   </div>
 
   <script type="module">
@@ -169,7 +172,7 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
-    // 1. EXACT ROOM DIMENSIONS (2.77m W x 5.13m L x 2.70m H)
+    // 1. ROOM DIMENSIONS (2.77m W x 5.13m L x 2.70m H)
     const ROOM_W = 2.77;
     const ROOM_L = 5.13;
     const ROOM_H = 2.70;
@@ -189,13 +192,12 @@
     scene.background = new THREE.Color(0x16181d);
 
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 50);
-    // Camera near the room entrance looking towards the window blinds
     camera.position.set(0.65, 1.60, halfL - 0.4);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.target.set(0, 0.6, -0.8); // Focuses on the wheeler on the floor
+    controls.target.set(0, 0.55, -0.8);
     controls.maxDistance = 6.5;
     controls.minDistance = 0.4;
 
@@ -253,7 +255,7 @@
     bbBack.position.set(0, 0.04, -halfL + 0.01);
     roomGroup.add(bbBack);
 
-    // Table on Left Wall
+    // Desk on Left Wall
     const tableGroup = new THREE.Group();
     const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 1.40), deskTopMat);
     tableTop.position.set(0, 0.72, 0);
@@ -313,10 +315,10 @@
     scene.add(windowDaylight);
     scene.add(windowDaylight.target);
 
-    // 4. MODEL HIERARCHY FOR CONTROLLED POSITIONING & 90° ROTATION
+    // 4. MODEL HIERARCHY
     const positionGroup = new THREE.Group(); // Handles X (Left/Right) & Z (Depth)
-    const yawStepperGroup = new THREE.Group(); // Handles clean 90° turn steps
-    const axisAlignGroup = new THREE.Group(); // Handles standing upright on wheels (Pitch/Roll)
+    const yawStepperGroup = new THREE.Group(); // Handles clean 90° turns
+    const axisAlignGroup = new THREE.Group(); // Handles Pitch/Roll to stand on wheels
 
     positionGroup.add(yawStepperGroup);
     yawStepperGroup.add(axisAlignGroup);
@@ -326,19 +328,19 @@
     let baseScaleFactor = 1.0;
     let currentYawDegrees = 0;
 
-    // Helper: Snaps the lowest point of wheels/geometry flush to Y = 0 (Floor)
+    // Helper: Locks the lowest point of wheels/legs flat to Y = 0 (Floor)
     function lockWheelsToFloor() {
       if (!activeMesh) return;
       positionGroup.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(axisAlignGroup);
       const lowestY = box.min.y;
       
-      // Keep wheels sitting on the floor at Y = 0
+      // Offset so the wheels sit flat on the vinyl floor
       positionGroup.position.y -= lowestY;
     }
 
-    // Process loaded GLB model
-    function setupGLBModel(imported, sourceLabel) {
+    // Process USSL.glb model
+    function setupUSSLModel(imported, sourceLabel) {
       while(axisAlignGroup.children.length > 0) axisAlignGroup.remove(axisAlignGroup.children[0]);
       axisAlignGroup.rotation.set(0, 0, 0);
       yawStepperGroup.rotation.set(0, 0, 0);
@@ -363,7 +365,7 @@
       activeMesh = imported;
       axisAlignGroup.add(imported);
 
-      // Set initial position standing on floor in clear space
+      // Default placement standing on floor in clear aisle
       positionGroup.position.set(0.15, 0, -0.80);
       lockWheelsToFloor();
 
@@ -377,58 +379,17 @@
       updateTelemetry();
     }
 
-    // Default fallback geometry if model.glb isn't yet in repository
-    function buildDefaultFallbackAssembly() {
-      while(axisAlignGroup.children.length > 0) axisAlignGroup.remove(axisAlignGroup.children[0]);
-
-      const wheeler = new THREE.Group();
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.7, roughness: 0.3 });
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.2, roughness: 0.8 });
-
-      // Chassis Box
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.22, 0.45), bodyMat);
-      body.position.set(0, 0.22, 0);
-      body.castShadow = true;
-      wheeler.add(body);
-
-      // 4 Wheels
-      const wRadius = 0.08, wThick = 0.05;
-      const wOffsets = [
-        [-0.34, 0.08, -0.18],
-        [0.34, 0.08, -0.18],
-        [-0.34, 0.08, 0.18],
-        [0.34, 0.08, 0.18]
-      ];
-      wOffsets.forEach(([x, y, z]) => {
-        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(wRadius, wRadius, wThick, 20), wheelMat);
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(x, y, z);
-        wheel.castShadow = true;
-        wheeler.add(wheel);
-      });
-
-      wheeler.name = "cadMesh";
-      activeMesh = wheeler;
-      baseScaleFactor = 1.0;
-      axisAlignGroup.add(wheeler);
-
-      positionGroup.position.set(0.15, 0, -0.80);
-      lockWheelsToFloor();
-      document.getElementById('loadedModelName').textContent = "Demo Wheeler (Add model.glb to repo)";
-      updateTelemetry();
-    }
-
-    // 5. AUTOMATIC STARTUP LOADER FOR "model.glb"
+    // 5. AUTOMATIC STARTUP LOADER FOR "USSL.glb"
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
-      './model.glb',
+      './USSL.glb',
       (gltf) => {
-        setupGLBModel(gltf.scene, 'model.glb (Default)');
+        setupUSSLModel(gltf.scene, 'USSL.glb (Default)');
       },
       undefined,
       (err) => {
-        console.warn('model.glb not found in root, falling back to demo.', err);
-        buildDefaultFallbackAssembly();
+        console.warn('Could not auto-load ./USSL.glb from root. Try uploading via button.', err);
+        document.getElementById('loadedModelName').textContent = "USSL.glb not found in repo yet. Please upload below.";
       }
     );
 
@@ -443,7 +404,7 @@
 
       if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
         gltfLoader.load(fileURL, (gltf) => {
-          setupGLBModel(gltf.scene, file.name);
+          setupUSSLModel(gltf.scene, file.name);
         });
       } else if (filename.endsWith('.stl')) {
         const stlLoader = new STLLoader();
@@ -456,7 +417,7 @@
           geometry.center();
           geometry.computeVertexNormals();
           geometry.computeBoundingBox();
-          geometry.rotateX(-Math.PI / 2); // SolidWorks Z-up alignment
+          geometry.rotateX(-Math.PI / 2);
 
           const bbox = geometry.boundingBox;
           const maxDim = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
@@ -480,7 +441,7 @@
       }
     });
 
-    // 7. 90-DEGREE ROTATION STEPPER (NO 360° SPIN)
+    // 7. 90-DEGREE ROTATION STEPPER
     document.getElementById('btnTurn90CW').addEventListener('click', () => {
       currentYawDegrees = (currentYawDegrees + 90) % 360;
       yawStepperGroup.rotation.y = THREE.MathUtils.degToRad(currentYawDegrees);
@@ -495,7 +456,7 @@
       updateTelemetry();
     });
 
-    // Stand on wheels if loaded lying on side
+    // Stand on wheels if imported laying on side
     document.getElementById('btnPitch90').addEventListener('click', () => {
       axisAlignGroup.rotation.x += Math.PI / 2;
       lockWheelsToFloor();
@@ -503,6 +464,10 @@
 
     document.getElementById('btnRoll90').addEventListener('click', () => {
       axisAlignGroup.rotation.z += Math.PI / 2;
+      lockWheelsToFloor();
+    });
+
+    document.getElementById('btnSnapWheels').addEventListener('click', () => {
       lockWheelsToFloor();
     });
 
@@ -577,7 +542,7 @@
       document.getElementById('tele-rot').textContent = `${currentYawDegrees}°`;
     }
 
-    // 9. ANIMATION LOOP (Controls only orbit view)
+    // 9. ANIMATION LOOP (Orbit room freely)
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
