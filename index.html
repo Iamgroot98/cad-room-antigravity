@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SolidWorks 3D Anti-Gravity Room Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Import map for modern Three.js modules -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+    }
+    #viewport {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      outline: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="text-slate-100">
+
+  <!-- 3D Canvas -->
+  <canvas id="viewport"></canvas>
+
+  <!-- Top Status Bar -->
+  <header class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
+    <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2.5 shadow-xl pointer-events-auto flex items-center space-x-3">
+      <div class="h-3 w-3 rounded-full bg-emerald-400 animate-pulse"></div>
+      <div>
+        <h1 class="text-sm font-semibold tracking-wide text-white">CAD Anti-Gravity Simulation</h1>
+        <p class="text-xs text-slate-400">Room: 2.77m (W) × 5.13m (L) × 2.70m (H)</p>
+      </div>
+    </div>
+
+    <!-- Quick Info Telemetry -->
+    <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2 shadow-xl pointer-events-auto hidden md:flex items-center space-x-6 text-xs text-slate-300">
+      <div>Pos Y: <span id="tele-y" class="font-mono text-cyan-400 font-bold">1.40m</span></div>
+      <div>Vel: <span id="tele-vel" class="font-mono text-emerald-400 font-bold">0.00 m/s</span></div>
+      <div>Gravity: <span id="tele-grav" class="font-mono text-amber-400 font-bold">0.00 m/s²</span></div>
+    </div>
+  </header>
+
+  <!-- Control Panel (Floating Glass Card) -->
+  <aside class="absolute left-4 bottom-4 top-24 w-80 bg-slate-900/85 backdrop-blur-md border border-slate-700/70 rounded-2xl p-4 shadow-2xl overflow-y-auto custom-scroll z-10 flex flex-col space-y-4">
+    
+    <!-- File Input Section -->
+    <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5">
+      <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+        <span>Load CAD Model</span>
+        <span class="text-[10px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-700/50">STL / GLB</span>
+      </h2>
+      <label class="block border-2 border-dashed border-slate-600 hover:border-cyan-400 rounded-lg p-3 text-center cursor-pointer transition bg-slate-900/40">
+        <svg class="mx-auto h-6 w-6 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <span class="text-xs text-slate-300 font-medium">Upload SolidWorks export</span>
+        <input type="file" id="cadFileInput" accept=".stl,.glb,.gltf" class="hidden">
+      </label>
+      <div id="loadedModelName" class="mt-2 text-[11px] text-slate-400 truncate">Default: Planetary Gearbox Demo</div>
+    </div>
+
+    <!-- Physics & Zero-G Controls -->
+    <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-3">
+      <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Anti-Gravity Physics</h2>
+      
+      <!-- Gravity Slider -->
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-slate-400">Effective Gravity (g)</span>
+          <span id="gravityValueLabel" class="font-mono text-cyan-400">0.00 m/s²</span>
+        </div>
+        <input type="range" id="gravitySlider" min="-9.8" max="9.8" step="0.2" value="0.0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+          <span>-9.8 (Up)</span>
+          <span class="text-cyan-400 font-bold">0.0 (Zero-G)</span>
+          <span>+9.8 (Down)</span>
+        </div>
+      </div>
+
+      <!-- Air Drag / Damping -->
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-slate-400">Damping (Air Friction)</span>
+          <span id="dampingLabel" class="font-mono text-cyan-400">0.05</span>
+        </div>
+        <input type="range" id="dampingSlider" min="0.0" max="0.5" step="0.01" value="0.05" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+      </div>
+
+      <!-- Brownian Micro-Drift -->
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-slate-400">Turbulent Micro-Drift</span>
+          <span id="driftLabel" class="font-mono text-cyan-400">0.08</span>
+        </div>
+        <input type="range" id="driftSlider" min="0.0" max="0.5" step="0.02" value="0.08" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button id="btnImpulse" class="px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow-md">
+          Thruster Boost ↑
+        </button>
+        <button id="btnStabilize" class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 active:scale-95 text-xs font-semibold text-slate-200 rounded-lg transition">
+          Stabilize Spin
+        </button>
+        <button id="btnResetPos" class="col-span-2 px-2.5 py-1.5 bg-slate-700/60 hover:bg-slate-600 text-xs font-semibold text-slate-300 rounded-lg transition">
+          Reset to Room Center
+        </button>
+      </div>
+    </div>
+
+    <!-- Presets & Room Options -->
+    <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-2">
+      <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Room Environment</h2>
+      <div class="flex items-center justify-between text-xs py-1">
+        <span class="text-slate-300">Desk Obstacle Collision</span>
+        <input type="checkbox" id="deskToggle" checked class="w-4 h-4 rounded text-cyan-500 focus:ring-0 cursor-pointer">
+      </div>
+      <div class="flex items-center justify-between text-xs py-1">
+        <span class="text-slate-300">Ceiling Wireframe Guide</span>
+        <input type="checkbox" id="wireframeToggle" class="w-4 h-4 rounded text-cyan-500 focus:ring-0 cursor-pointer">
+      </div>
+    </div>
+
+    <!-- SolidWorks Export Instructions Note -->
+    <div class="text-[11px] text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+      <div class="font-semibold text-slate-300 mb-1">💡 Tips for SolidWorks export:</div>
+      File → Save As → <strong class="text-cyan-400">STL</strong> (Options: Binary, Deviation 0.05mm) or export to <strong class="text-cyan-400">STEP AP214</strong> & convert to GLB for full metallic colors.
+    </div>
+  </aside>
+
+  <!-- Instructions Banner -->
+  <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 px-4 py-2 rounded-xl text-xs text-slate-300 shadow-xl pointer-events-none hidden sm:block">
+    🖱️ <strong class="text-white">Left Click + Drag Model:</strong> Fling CAD Part &nbsp;|&nbsp; 🖱️ <strong class="text-white">Right Click / Empty Space:</strong> Orbit Room
+  </div>
+
+  <!-- Three.js App Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // ----------------------------------------------------
+    // 1. EXACT ROOM DIMENSIONS (277cm W x 513cm L x 270cm H)
+    // ----------------------------------------------------
+    const ROOM_W = 2.77;
+    const ROOM_L = 5.13;
+    const ROOM_H = 2.70;
+    const halfW = ROOM_W / 2;
+    const halfL = ROOM_L / 2;
+
+    const canvas = document.getElementById('viewport');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x16181d);
+
+    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 50);
+    // Position camera near the 88cm door opening on the front-right
+    camera.position.set(0.6, 1.55, halfL - 0.35);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.set(0, 1.35, -0.4);
+    controls.maxDistance = 6.5;
+    controls.minDistance = 0.3;
+
+    // ----------------------------------------------------
+    // 2. ROOM GEOMETRY & MATERIALS MATCHING USER PHOTOS
+    // ----------------------------------------------------
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0xEDE9DF, // Warm off-white / cream drywall
+      roughness: 0.9,
+      metalness: 0.02
+    });
+
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x8C9299, // Grey commercial vinyl tile
+      roughness: 0.72,
+      metalness: 0.06
+    });
+
+    const ceilingMat = new THREE.MeshStandardMaterial({
+      color: 0xF7F7F5,
+      roughness: 0.96
+    });
+
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: 0x8A6343, // Wood baseboard
+      roughness: 0.6
+    });
+
+    const windowBlindMat = new THREE.MeshStandardMaterial({
+      color: 0xE2E4E6,
+      roughness: 0.4
+    });
+
+    const deskTopMat = new THREE.MeshStandardMaterial({
+      color: 0xD8B084, // Natural oak table surface
+      roughness: 0.45
+    });
+
+    const deskBodyMat = new THREE.MeshStandardMaterial({
+      color: 0xDCD9CE, // Metal filing pedestal
+      roughness: 0.65
+    });
+
+    const roomGroup = new THREE.Group();
+
+    // Floor
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_L), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    roomGroup.add(floor);
+
+    // Ceiling
+    const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_L), ceilingMat);
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = ROOM_H;
+    roomGroup.add(ceiling);
+
+    // Back Wall (with window blind cut)
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_H), wallMat);
+    backWall.position.set(0, ROOM_H / 2, -halfL);
+    backWall.receiveShadow = true;
+    roomGroup.add(backWall);
+
+    // Venetian Blind over window (centered on back wall)
+    const windowBlind = new THREE.Mesh(new THREE.BoxGeometry(1.65, 2.2, 0.04), windowBlindMat);
+    windowBlind.position.set(0, 1.45, -halfL + 0.025);
+    windowBlind.castShadow = true;
+    windowBlind.receiveShadow = true;
+    roomGroup.add(windowBlind);
+
+    // Left Wall
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_L, ROOM_H), wallMat);
+    leftWall.position.set(-halfW, ROOM_H / 2, 0);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.receiveShadow = true;
+    roomGroup.add(leftWall);
+
+    // Right Wall
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_L, ROOM_H), wallMat);
+    rightWall.position.set(halfW, ROOM_H / 2, 0);
+    rightWall.rotation.y = -Math.PI / 2;
+    rightWall.receiveShadow = true;
+    roomGroup.add(rightWall);
+
+    // Baseboards along walls
+    const baseboardGeo = new THREE.BoxGeometry(ROOM_W, 0.08, 0.02);
+    const bbBack = new THREE.Mesh(baseboardGeo, trimMat);
+    bbBack.position.set(0, 0.04, -halfL + 0.01);
+    roomGroup.add(bbBack);
+
+    // --- Office Table Obstacle on Left Wall ---
+    // Desk size: 0.75m wide, 1.40m long, 0.74m tall
+    const tableGroup = new THREE.Group();
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 1.40), deskTopMat);
+    tableTop.position.set(0, 0.72, 0);
+    tableTop.castShadow = true;
+    tableTop.receiveShadow = true;
+    tableGroup.add(tableTop);
+
+    // Drawers / Pedestal unit under table
+    const tablePedestal = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.68, 0.44), deskBodyMat);
+    tablePedestal.position.set(0, 0.35, 0.44);
+    tablePedestal.castShadow = true;
+    tablePedestal.receiveShadow = true;
+    tableGroup.add(tablePedestal);
+
+    // Back tall file cabinet next to table
+    const fileCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.70, 1.35, 0.50), deskBodyMat);
+    fileCabinet.position.set(0, 0.675, -0.98);
+    fileCabinet.castShadow = true;
+    fileCabinet.receiveShadow = true;
+    tableGroup.add(fileCabinet);
+
+    tableGroup.position.set(-halfW + (0.75 / 2), 0, -0.4);
+    roomGroup.add(tableGroup);
+
+    // --- Pedestal Sink on Right Wall ---
+    const sinkGroup = new THREE.Group();
+    const basin = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.22, 0.46), new THREE.MeshStandardMaterial({ color: 0xF3F4F6, roughness: 0.2, metalness: 0.1 }));
+    basin.position.set(0, 0.85, 0);
+    basin.castShadow = true;
+    sinkGroup.add(basin);
+
+    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.80, 16), new THREE.MeshStandardMaterial({ color: 0xE5E7EB, roughness: 0.3 }));
+    pedestal.position.set(0, 0.40, 0);
+    pedestal.castShadow = true;
+    sinkGroup.add(pedestal);
+
+    sinkGroup.position.set(halfW - 0.30, 0, -0.3);
+    roomGroup.add(sinkGroup);
+
+    scene.add(roomGroup);
+
+    // Room Bounding Wireframe
+    const boxWire = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(ROOM_W, ROOM_H, ROOM_L)), 0x38bdf8);
+    boxWire.position.set(0, ROOM_H / 2, 0);
+    boxWire.visible = false;
+    scene.add(boxWire);
+
+    // ----------------------------------------------------
+    // 3. LIGHTING (Acoustic Drop-Ceiling Panels & Natural Window Fill)
+    // ----------------------------------------------------
+    const ambientLight = new THREE.AmbientLight(0xfff7ed, 0.9);
+    scene.add(ambientLight);
+
+    const ceilingLight1 = new THREE.PointLight(0xffffff, 22, 5.0, 1.2);
+    ceilingLight1.position.set(0, ROOM_H - 0.1, -1.1);
+    ceilingLight1.castShadow = true;
+    ceilingLight1.shadow.bias = -0.001;
+    scene.add(ceilingLight1);
+
+    const ceilingLight2 = new THREE.PointLight(0xffffff, 22, 5.0, 1.2);
+    ceilingLight2.position.set(0, ROOM_H - 0.1, 1.1);
+    ceilingLight2.castShadow = true;
+    ceilingLight2.shadow.bias = -0.001;
+    scene.add(ceilingLight2);
+
+    // Soft cool daylight seeping through the back venetian blind
+    const windowDaylight = new THREE.DirectionalLight(0xdbeafe, 1.2);
+    windowDaylight.position.set(0, 2.0, -halfL - 1.0);
+    windowDaylight.target.position.set(0, 1.0, 0);
+    scene.add(windowDaylight);
+    scene.add(windowDaylight.target);
+
+    // ----------------------------------------------------
+    // 4. FLOATING CAD MODEL & PHYSICS RIG
+    // ----------------------------------------------------
+    let activeModel = new THREE.Group();
+    scene.add(activeModel);
+
+    const physics = {
+      gravity: 0.0,
+      damping: 0.05,
+      drift: 0.08,
+      restitution: 0.72,
+      velocity: new THREE.Vector3(0.04, 0.01, -0.03),
+      angularVelocity: new THREE.Vector3(0.3, 0.4, 0.1),
+      radius: 0.28,
+      deskCollision: true
+    };
+
+    // Desk Bounding Box (AABB)
+    const deskBox = new THREE.Box3();
+    deskBox.setFromCenterAndSize(
+      new THREE.Vector3(-halfW + 0.38, 0.40, -0.65),
+      new THREE.Vector3(0.80, 0.85, 2.10)
+    );
+
+    // Fallback Procedural Model: Planetary Gearset Assembly
+    function buildDefaultCADAssembly() {
+      while(activeModel.children.length > 0) {
+        activeModel.remove(activeModel.children[0]);
+      }
+
+      const cadGroup = new THREE.Group();
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.88, roughness: 0.25 });
+      const titanMat = new THREE.MeshStandardMaterial({ color: 0x94A3B8, metalness: 0.95, roughness: 0.2 });
+      const cyanMat = new THREE.MeshStandardMaterial({ color: 0x06B6D4, metalness: 0.7, roughness: 0.3 });
+
+      // Sun Gear
+      const sun = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.14, 24), goldMat);
+      sun.rotation.x = Math.PI / 2;
+      sun.castShadow = true;
+      cadGroup.add(sun);
+
+      // Planet Gears
+      const numPlanets = 4;
+      const radius = 0.22;
+      for (let i = 0; i < numPlanets; i++) {
+        const angle = (i / numPlanets) * Math.PI * 2;
+        const planet = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.12, 20), titanMat);
+        planet.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+        planet.rotation.x = Math.PI / 2;
+        planet.castShadow = true;
+        cadGroup.add(planet);
+      }
+
+      // Outer Ring Casing
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.045, 16, 48), cyanMat);
+      ring.castShadow = true;
+      cadGroup.add(ring);
+
+      activeModel.add(cadGroup);
+      activeModel.position.set(0, 1.40, 0);
+      physics.radius = 0.35;
+    }
+    buildDefaultCADAssembly();
+
+    // ----------------------------------------------------
+    // 5. SOLIDWORKS / CAD FILE IMPORT PIPELINE
+    // ----------------------------------------------------
+    const cadFileInput = document.getElementById('cadFileInput');
+    const loadedModelName = document.getElementById('loadedModelName');
+
+    cadFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const filename = file.name.toLowerCase();
+      loadedModelName.textContent = `Loaded: ${file.name}`;
+      const fileURL = URL.createObjectURL(file);
+
+      while(activeModel.children.length > 0) {
+        activeModel.remove(activeModel.children[0]);
+      }
+
+      if (filename.endsWith('.stl')) {
+        const stlLoader = new STLLoader();
+        stlLoader.load(fileURL, (geometry) => {
+          geometry.center();
+          geometry.computeVertexNormals();
+
+          // Scale to fit room comfortably (~0.6m diameter)
+          geometry.computeBoundingSphere();
+          const currentRadius = geometry.boundingSphere.radius;
+          const targetRadius = 0.30;
+          const scale = targetRadius / (currentRadius || 1);
+
+          const mat = new THREE.MeshStandardMaterial({
+            color: 0x38BDF8,
+            metalness: 0.85,
+            roughness: 0.28
+          });
+
+          const mesh = new THREE.Mesh(geometry, mat);
+          mesh.scale.setScalar(scale);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+
+          activeModel.add(mesh);
+          physics.radius = targetRadius;
+          physics.velocity.set(0.02, 0.04, -0.02);
+          activeModel.position.set(0, 1.4, 0);
+        });
+      } else if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
+        const gltfLoader = new GLTFLoader();
+        gltfLoader.load(fileURL, (gltf) => {
+          const imported = gltf.scene;
+
+          // Compute size and normalize
+          const box = new THREE.Box3().setFromObject(imported);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const targetDim = 0.65;
+          const scale = targetDim / (maxDim || 1);
+
+          imported.position.sub(center.multiplyScalar(scale));
+          imported.scale.setScalar(scale);
+
+          imported.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+
+          activeModel.add(imported);
+          physics.radius = targetDim / 2;
+          physics.velocity.set(0.02, 0.04, -0.02);
+          activeModel.position.set(0, 1.4, 0);
+        });
+      }
+    });
+
+    // ----------------------------------------------------
+    // 6. 3D DRAG & FLING INTERACTION
+    // ----------------------------------------------------
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const dragPlane = new THREE.Plane();
+    const planeIntersect = new THREE.Vector3();
+    let isDragging = false;
+    let prevMousePos = new THREE.Vector3();
+
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('aside') || e.target.closest('header')) return;
+      if (e.button !== 0) return; // Only primary mouse button
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(activeModel.children, true);
+
+      if (intersects.length > 0) {
+        isDragging = true;
+        controls.enabled = false;
+
+        // Create a dragging plane facing the camera through the model center
+        dragPlane.setFromNormalAndCoplanarPoint(
+          camera.getWorldDirection(new THREE.Vector3()).negate(),
+          activeModel.position
+        );
+
+        prevMousePos.copy(activeModel.position);
+        physics.velocity.set(0, 0, 0);
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+        // Calculate fling release velocity
+        physics.velocity.copy(planeIntersect).sub(activeModel.position).multiplyScalar(15);
+        activeModel.position.copy(planeIntersect);
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (isDragging) {
+        isDragging = false;
+        controls.enabled = true;
+        // Cap max release fling speed
+        physics.velocity.clampLength(0, 5.0);
+        physics.angularVelocity.set(
+          (Math.random() - 0.5) * 4,
+          (Math.random() - 0.5) * 4,
+          (Math.random() - 0.5) * 4
+        );
+      }
+    });
+
+    // ----------------------------------------------------
+    // 7. PHYSICS SIMULATION ENGINE & COLLISION DETECTION
+    // ----------------------------------------------------
+    const clock = new THREE.Clock();
+
+    function updateSimulation(dt) {
+      if (isDragging) return;
+
+      // 1. Apply Gravity Acceleration
+      physics.velocity.y += physics.gravity * dt;
+
+      // 2. Air Damping (linear & angular decay)
+      physics.velocity.multiplyScalar(1 - Math.min(physics.damping * dt * 8, 0.9));
+      physics.angularVelocity.multiplyScalar(1 - Math.min(physics.damping * dt * 6, 0.9));
+
+      // 3. Brownian Microgravity Turbulence
+      if (physics.drift > 0) {
+        physics.velocity.x += (Math.random() - 0.5) * physics.drift * dt;
+        physics.velocity.y += (Math.random() - 0.5) * physics.drift * dt;
+        physics.velocity.z += (Math.random() - 0.5) * physics.drift * dt;
+      }
+
+      // 4. Integrate Position & Rotation
+      activeModel.position.addScaledVector(physics.velocity, dt);
+      activeModel.rotation.x += physics.angularVelocity.x * dt;
+      activeModel.rotation.y += physics.angularVelocity.y * dt;
+      activeModel.rotation.z += physics.angularVelocity.z * dt;
+
+      // 5. Room Bounds Collisions (2.77m W x 5.13m L x 2.70m H)
+      const r = physics.radius;
+      const minX = -halfW + r, maxX = halfW - r;
+      const minY = r,          maxY = ROOM_H - r;
+      const minZ = -halfL + r, maxZ = halfL - r;
+
+      // Left / Right Walls
+      if (activeModel.position.x < minX) {
+        activeModel.position.x = minX;
+        physics.velocity.x = Math.abs(physics.velocity.x) * physics.restitution;
+      } else if (activeModel.position.x > maxX) {
+        activeModel.position.x = maxX;
+        physics.velocity.x = -Math.abs(physics.velocity.x) * physics.restitution;
+      }
+
+      // Floor / Ceiling
+      if (activeModel.position.y < minY) {
+        activeModel.position.y = minY;
+        physics.velocity.y = Math.abs(physics.velocity.y) * physics.restitution;
+      } else if (activeModel.position.y > maxY) {
+        activeModel.position.y = maxY;
+        physics.velocity.y = -Math.abs(physics.velocity.y) * physics.restitution;
+      }
+
+      // Back Window Wall / Front Wall
+      if (activeModel.position.z < minZ) {
+        activeModel.position.z = minZ;
+        physics.velocity.z = Math.abs(physics.velocity.z) * physics.restitution;
+      } else if (activeModel.position.z > maxZ) {
+        activeModel.position.z = maxZ;
+        physics.velocity.z = -Math.abs(physics.velocity.z) * physics.restitution;
+      }
+
+      // 6. Collision with Desk Obstacle
+      if (physics.deskCollision) {
+        if (
+          activeModel.position.x - r < deskBox.max.x &&
+          activeModel.position.z + r > deskBox.min.z &&
+          activeModel.position.z - r < deskBox.max.z &&
+          activeModel.position.y - r < deskBox.max.y &&
+          activeModel.position.y + r > deskBox.min.y
+        ) {
+          // Bounce off top of the desk
+          activeModel.position.y = deskBox.max.y + r;
+          physics.velocity.y = Math.abs(physics.velocity.y) * physics.restitution;
+        }
+      }
+    }
+
+    // ----------------------------------------------------
+    // 8. TELEMETRY & UI BINDINGS
+    // ----------------------------------------------------
+    const teleY = document.getElementById('tele-y');
+    const teleVel = document.getElementById('tele-vel');
+    const teleGrav = document.getElementById('tele-grav');
+    const gravitySlider = document.getElementById('gravitySlider');
+    const gravityValueLabel = document.getElementById('gravityValueLabel');
+    const dampingSlider = document.getElementById('dampingSlider');
+    const dampingLabel = document.getElementById('dampingLabel');
+    const driftSlider = document.getElementById('driftSlider');
+    const driftLabel = document.getElementById('driftLabel');
+    const deskToggle = document.getElementById('deskToggle');
+    const wireframeToggle = document.getElementById('wireframeToggle');
+
+    gravitySlider.addEventListener('input', (e) => {
+      physics.gravity = parseFloat(e.target.value);
+      gravityValueLabel.textContent = `${physics.gravity.toFixed(2)} m/s²`;
+      teleGrav.textContent = `${physics.gravity.toFixed(2)} m/s²`;
+    });
+
+    dampingSlider.addEventListener('input', (e) => {
+      physics.damping = parseFloat(e.target.value);
+      dampingLabel.textContent = physics.damping.toFixed(2);
+    });
+
+    driftSlider.addEventListener('input', (e) => {
+      physics.drift = parseFloat(e.target.value);
+      driftLabel.textContent = physics.drift.toFixed(2);
+    });
+
+    deskToggle.addEventListener('change', (e) => {
+      physics.deskCollision = e.target.checked;
+      tableGroup.visible = e.target.checked;
+    });
+
+    wireframeToggle.addEventListener('change', (e) => {
+      boxWire.visible = e.target.checked;
+    });
+
+    document.getElementById('btnImpulse').addEventListener('click', () => {
+      physics.velocity.y += 1.8;
+      physics.angularVelocity.x += (Math.random() - 0.5) * 3;
+    });
+
+    document.getElementById('btnStabilize').addEventListener('click', () => {
+      physics.angularVelocity.set(0, 0, 0);
+      physics.velocity.set(0, 0, 0);
+    });
+
+    document.getElementById('btnResetPos').addEventListener('click', () => {
+      activeModel.position.set(0, 1.40, 0);
+      physics.velocity.set(0, 0, 0);
+      physics.angularVelocity.set(0.1, 0.2, 0);
+    });
+
+    // ----------------------------------------------------
+    // 9. ANIMATION LOOP
+    // ----------------------------------------------------
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.1);
+
+      updateSimulation(dt);
+      controls.update();
+
+      // Update UI Telemetry
+      teleY.textContent = `${activeModel.position.y.toFixed(2)}m`;
+      teleVel.textContent = `${physics.velocity.length().toFixed(2)} m/s`;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

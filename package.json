@@ -1,0 +1,13 @@
+{
+  "name": "cad-room-antigravity-visualizer",
+  "version": "1.0.0",
+  "description": "3D CAD Anti-Gravity Room Visualizer tailored for SolidWorks exports and accurate room dimensions (2.77m x 5.13m)",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "build": "echo 'Ready for Vercel Static Hosting'"
+  },
+  "keywords": ["threejs", "cad", "solidworks", "anti-gravity", "webxr"],
+  "author": "Moshiur Ahmed",
+  "license": "MIT"
+}
