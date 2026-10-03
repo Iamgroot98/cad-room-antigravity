@@ -55,10 +55,11 @@
 
     <!-- Active Coordinates Display -->
     <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2 shadow-xl pointer-events-auto hidden md:flex items-center space-x-6 text-xs text-slate-300">
-      <div>X (Left/Right): <span id="tele-x" class="font-mono text-cyan-400 font-bold">0.15m</span></div>
-      <div>Z (Curtains): <span id="tele-z" class="font-mono text-cyan-400 font-bold">-0.80m</span></div>
+      <div>X (Left/Right): <span id="tele-x" class="font-mono text-cyan-400 font-bold">0.40m</span></div>
+      <div>Z (Curtains): <span id="tele-z" class="font-mono text-cyan-400 font-bold">-0.95m</span></div>
       <div>Facing: <span id="tele-rot" class="font-mono text-amber-400 font-bold">0°</span></div>
-      <div>Status: <span class="font-mono text-emerald-400 font-bold">Wheels on Ground (Y = 0)</span></div>
+      <div>Scale: <span id="tele-scale" class="font-mono text-emerald-400 font-bold">1.85x</span></div>
+      <div>Status: <span class="font-mono text-emerald-400 font-bold">Wheels on Ground</span></div>
     </div>
   </header>
 
@@ -73,7 +74,6 @@
       </h2>
       <div id="loadedModelName" class="text-[12px] text-cyan-300 font-medium truncate">Loading: USSL.glb...</div>
       
-      <!-- Optional Local File Selector fallback -->
       <label class="mt-2 block border border-slate-600 hover:border-cyan-400 rounded-lg py-1.5 px-2 text-center cursor-pointer transition bg-slate-900/40 text-[11px] text-slate-300">
         <span>Upload replacement GLB / STL</span>
         <input type="file" id="cadFileInput" accept=".glb,.gltf,.stl" class="hidden">
@@ -87,7 +87,6 @@
         <span class="text-[10px] text-amber-400 font-mono">No 360° Drift</span>
       </div>
       
-      <!-- Primary 90 degree turn buttons -->
       <div class="grid grid-cols-2 gap-2">
         <button id="btnTurn90CW" class="py-2 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-xs font-bold text-white rounded-lg transition shadow flex items-center justify-center space-x-1">
           <span>Turn +90° ↷</span>
@@ -97,7 +96,6 @@
         </button>
       </div>
 
-      <!-- Wheels Alignment (In case SolidWorks coordinate frame puts it on its side) -->
       <div class="pt-2 border-t border-slate-700/60 space-y-1.5">
         <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider block">Align Wheels Downward</span>
         <div class="grid grid-cols-2 gap-2">
@@ -114,30 +112,30 @@
       </div>
     </div>
 
-    <!-- Position & Movement Sliders -->
+    <!-- Position & Movement Sliders (Defaults matching your exact inputs) -->
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-3">
       <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Move Position</h2>
       
-      <!-- Forward / Backward towards Curtains -->
+      <!-- Forward / Backward towards Curtains (Default: -0.95m) -->
       <div>
         <div class="flex justify-between text-xs mb-1">
           <span class="text-slate-400">Position ↔ Curtains (Depth)</span>
-          <span id="posZLabel" class="font-mono text-cyan-400 font-bold">-0.80m</span>
+          <span id="posZLabel" class="font-mono text-cyan-400 font-bold">-0.95m</span>
         </div>
-        <input type="range" id="posZSlider" min="-2.1" max="1.5" step="0.05" value="-0.8" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+        <input type="range" id="posZSlider" min="-2.1" max="1.5" step="0.05" value="-0.95" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
         <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
           <span>Curtains (-2.1m)</span>
           <span>Door (+1.5m)</span>
         </div>
       </div>
 
-      <!-- Left / Right (Table to Sink) -->
+      <!-- Left / Right (Default: 0.40m) -->
       <div>
         <div class="flex justify-between text-xs mb-1">
           <span class="text-slate-400">Position ↔ Left / Right</span>
-          <span id="posXLabel" class="font-mono text-cyan-400 font-bold">0.15m</span>
+          <span id="posXLabel" class="font-mono text-cyan-400 font-bold">0.40m</span>
         </div>
-        <input type="range" id="posXSlider" min="-0.75" max="0.75" step="0.05" value="0.15" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+        <input type="range" id="posXSlider" min="-0.75" max="0.75" step="0.05" value="0.40" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
         <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
           <span>Desk (-0.75m)</span>
           <span>Center</span>
@@ -145,16 +143,15 @@
         </div>
       </div>
 
-      <!-- Scale / Size -->
+      <!-- Scale / Size (Default: 1.85x) -->
       <div>
         <div class="flex justify-between text-xs mb-1">
           <span class="text-slate-400">Scale / Size</span>
-          <span id="scaleLabel" class="font-mono text-cyan-400 font-bold">1.00x</span>
+          <span id="scaleLabel" class="font-mono text-cyan-400 font-bold">1.85x</span>
         </div>
-        <input type="range" id="sizeSlider" min="0.2" max="2.5" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+        <input type="range" id="sizeSlider" min="0.2" max="2.5" step="0.05" value="1.85" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
       </div>
 
-      <!-- One Click Auto-Fit -->
       <button id="btnFitFreeSpace" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow-md">
         Fit Centered in Free Floor Area
       </button>
@@ -163,7 +160,7 @@
 
   <!-- Instructions Banner -->
   <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 px-4 py-2 rounded-xl text-xs text-slate-300 shadow-xl pointer-events-none hidden sm:block">
-    🖱️ <strong class="text-white">Left/Right Click + Drag Background:</strong> Orbit View to inspect USSL placement
+    🖱️ <strong class="text-white">Left/Right Click + Drag Background:</strong> Orbit View to inspect wheeler placement
   </div>
 
   <script type="module">
@@ -172,12 +169,17 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
-    // 1. ROOM DIMENSIONS (2.77m W x 5.13m L x 2.70m H)
+    // 1. EXACT ROOM DIMENSIONS (2.77m W x 5.13m L x 2.70m H)
     const ROOM_W = 2.77;
     const ROOM_L = 5.13;
     const ROOM_H = 2.70;
     const halfW = ROOM_W / 2;
     const halfL = ROOM_L / 2;
+
+    // DEFAULT TARGET VALUES REQUESTED
+    const DEFAULT_POS_X = 0.40;
+    const DEFAULT_POS_Z = -0.95;
+    const DEFAULT_SCALE_MULT = 1.85;
 
     const canvas = document.getElementById('viewport');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -197,7 +199,7 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.target.set(0, 0.55, -0.8);
+    controls.target.set(DEFAULT_POS_X, 0.45, DEFAULT_POS_Z);
     controls.maxDistance = 6.5;
     controls.minDistance = 0.4;
 
@@ -316,9 +318,9 @@
     scene.add(windowDaylight.target);
 
     // 4. MODEL HIERARCHY
-    const positionGroup = new THREE.Group(); // Handles X (Left/Right) & Z (Depth)
+    const positionGroup = new THREE.Group(); // Handles X (0.40m) & Z (-0.95m)
     const yawStepperGroup = new THREE.Group(); // Handles clean 90° turns
-    const axisAlignGroup = new THREE.Group(); // Handles Pitch/Roll to stand on wheels
+    const axisAlignGroup = new THREE.Group(); // Handles wheels facing floor
 
     positionGroup.add(yawStepperGroup);
     yawStepperGroup.add(axisAlignGroup);
@@ -335,14 +337,16 @@
       const box = new THREE.Box3().setFromObject(axisAlignGroup);
       const lowestY = box.min.y;
       
-      // Offset so the wheels sit flat on the vinyl floor
+      // Shift so bottom of wheels touches floor
       positionGroup.position.y -= lowestY;
     }
 
-    // Process USSL.glb model
+    // Process USSL.glb model with requested initial defaults
     function setupUSSLModel(imported, sourceLabel) {
       while(axisAlignGroup.children.length > 0) axisAlignGroup.remove(axisAlignGroup.children[0]);
-      axisAlignGroup.rotation.set(Math.PI, 0, 0);
+      
+      // Reset groups
+      axisAlignGroup.rotation.set(0, 0, 0);
       yawStepperGroup.rotation.set(0, 0, 0);
       currentYawDegrees = 0;
 
@@ -352,7 +356,9 @@
 
       const maxDim = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
       baseScaleFactor = 0.85 / (maxDim || 1);
-      imported.scale.setScalar(baseScaleFactor);
+      
+      // Apply initial 1.85x scale
+      imported.scale.setScalar(baseScaleFactor * DEFAULT_SCALE_MULT);
 
       imported.traverse(child => {
         if (child.isMesh) {
@@ -365,17 +371,20 @@
       activeMesh = imported;
       axisAlignGroup.add(imported);
 
-      // Default placement standing on floor in clear aisle
-      positionGroup.position.set(0.15, 0, -0.80);
+      // Auto-flip 180 degrees so wheels stand down on the floor by default
+      axisAlignGroup.rotation.set(Math.PI, 0, 0);
+
+      // Apply initial Position: X = 0.40m, Z = -0.95m
+      positionGroup.position.set(DEFAULT_POS_X, 0, DEFAULT_POS_Z);
       lockWheelsToFloor();
 
       document.getElementById('loadedModelName').textContent = `Loaded: ${sourceLabel}`;
-      document.getElementById('sizeSlider').value = "1.0";
-      document.getElementById('scaleLabel').textContent = "1.00x";
-      document.getElementById('posZSlider').value = "-0.8";
-      document.getElementById('posZLabel').textContent = "-0.80m";
-      document.getElementById('posXSlider').value = "0.15";
-      document.getElementById('posXLabel').textContent = "0.15m";
+      document.getElementById('sizeSlider').value = DEFAULT_SCALE_MULT.toFixed(2);
+      document.getElementById('scaleLabel').textContent = `${DEFAULT_SCALE_MULT.toFixed(2)}x`;
+      document.getElementById('posZSlider').value = DEFAULT_POS_Z.toFixed(2);
+      document.getElementById('posZLabel').textContent = `${DEFAULT_POS_Z.toFixed(2)}m`;
+      document.getElementById('posXSlider').value = DEFAULT_POS_X.toFixed(2);
+      document.getElementById('posXLabel').textContent = `${DEFAULT_POS_X.toFixed(2)}m`;
       updateTelemetry();
     }
 
@@ -388,8 +397,8 @@
       },
       undefined,
       (err) => {
-        console.warn('Could not auto-load ./USSL.glb from root. Try uploading via button.', err);
-        document.getElementById('loadedModelName').textContent = "USSL.glb not found in repo yet. Please upload below.";
+        console.warn('Could not auto-load ./USSL.glb from root. Please upload via button.', err);
+        document.getElementById('loadedModelName').textContent = "USSL.glb not found in repo. Upload below:";
       }
     );
 
@@ -426,13 +435,13 @@
           const mat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.65, roughness: 0.35 });
           const mesh = new THREE.Mesh(geometry, mat);
           mesh.name = "cadMesh";
-          mesh.scale.setScalar(baseScaleFactor);
+          mesh.scale.setScalar(baseScaleFactor * DEFAULT_SCALE_MULT);
           mesh.castShadow = true;
           mesh.receiveShadow = true;
 
           activeMesh = mesh;
           axisAlignGroup.add(mesh);
-          positionGroup.position.set(0.15, 0, -0.80);
+          positionGroup.position.set(DEFAULT_POS_X, 0, DEFAULT_POS_Z);
           lockWheelsToFloor();
 
           document.getElementById('loadedModelName').textContent = `Loaded: ${file.name}`;
@@ -456,7 +465,7 @@
       updateTelemetry();
     });
 
-    // Stand on wheels if imported laying on side
+    // Stand on wheels controls
     document.getElementById('btnPitch90').addEventListener('click', () => {
       axisAlignGroup.rotation.x += Math.PI / 2;
       lockWheelsToFloor();
@@ -504,6 +513,7 @@
         activeMesh.scale.setScalar(baseScaleFactor * multiplier);
         lockWheelsToFloor();
       }
+      updateTelemetry();
     });
 
     // One-click Fit to Free Space
@@ -515,7 +525,7 @@
         const d = box.max.z - box.min.z;
         const currentScale = activeMesh.scale.x;
 
-        const maxAllowedW = 1.35; // clearance between table & sink
+        const maxAllowedW = 1.35;
         const maxAllowedD = 1.80;
         const targetScale = Math.min(maxAllowedW / (w / currentScale), maxAllowedD / (d / currentScale));
 
@@ -524,12 +534,11 @@
         sizeSlider.value = relativeMultiplier.toFixed(2);
         scaleLabel.textContent = `${relativeMultiplier.toFixed(2)}x`;
 
-        // Position in clear aisle
-        positionGroup.position.set(0.15, 0, -1.10);
-        posXSlider.value = "0.15";
-        posXLabel.textContent = "0.15m";
-        posZSlider.value = "-1.10";
-        posZLabel.textContent = "-1.10m";
+        positionGroup.position.set(DEFAULT_POS_X, 0, DEFAULT_POS_Z);
+        posXSlider.value = DEFAULT_POS_X.toFixed(2);
+        posXLabel.textContent = `${DEFAULT_POS_X.toFixed(2)}m`;
+        posZSlider.value = DEFAULT_POS_Z.toFixed(2);
+        posZLabel.textContent = `${DEFAULT_POS_Z.toFixed(2)}m`;
 
         lockWheelsToFloor();
         updateTelemetry();
@@ -540,9 +549,12 @@
       document.getElementById('tele-x').textContent = `${positionGroup.position.x.toFixed(2)}m`;
       document.getElementById('tele-z').textContent = `${positionGroup.position.z.toFixed(2)}m`;
       document.getElementById('tele-rot').textContent = `${currentYawDegrees}°`;
+      if (document.getElementById('tele-scale')) {
+        document.getElementById('tele-scale').textContent = `${parseFloat(sizeSlider.value).toFixed(2)}x`;
+      }
     }
 
-    // 9. ANIMATION LOOP (Orbit room freely)
+    // 9. ANIMATION LOOP
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
