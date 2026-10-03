@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>USSL Wheeler - Room Placement & Dimensions</title>
+  <title>USSL Wheeler - Room Placement & Architectural Dimensions</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
     {
@@ -42,13 +42,6 @@
       opacity: 0;
       pointer-events: none;
     }
-    .dim-overlay {
-      position: absolute;
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-      white-space: nowrap;
-      transition: opacity 0.2s ease;
-    }
   </style>
 </head>
 <body class="text-slate-100">
@@ -56,15 +49,11 @@
   <!-- 3D Canvas -->
   <canvas id="viewport"></canvas>
 
-  <!-- HTML 2D/3D Dimension Labels Container -->
-  <div id="dimensionContainer" class="absolute inset-0 pointer-events-none overflow-hidden z-10 transition-opacity duration-300"></div>
-
-  <!-- Top Title & Toggle Bar -->
+  <!-- Top Title & Quick Telemetry Bar -->
   <header class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-20">
     <div class="flex items-center space-x-2 pointer-events-auto">
-      <!-- Toggle Sidebar Visibility Button -->
       <button id="btnToggleSidebar" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700/70 text-cyan-400 p-2.5 rounded-xl shadow-xl transition active:scale-95 flex items-center justify-center" title="Toggle Sidebar">
-        <svg id="sidebarIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
@@ -72,18 +61,18 @@
       <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2 shadow-xl flex items-center space-x-3">
         <div class="h-3 w-3 rounded-full bg-emerald-400"></div>
         <div>
-          <h1 class="text-sm font-semibold tracking-wide text-white">USSL Wheeler & Water Tank Placement</h1>
+          <h1 class="text-sm font-semibold tracking-wide text-white">USSL Wheeler & Water Tank Spatial Layout</h1>
           <p class="text-xs text-slate-400">Room: 2.77m (W) × 5.13m (L) × 2.70m (H)</p>
         </div>
       </div>
     </div>
 
-    <!-- Active Coordinates & Tank Spatial Telemetry -->
-    <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2 shadow-xl pointer-events-auto hidden lg:flex items-center space-x-5 text-xs text-slate-300">
-      <div>Tank Size: <span id="tele-tank-size" class="font-mono text-cyan-400 font-bold">--</span></div>
-      <div>Footprint Area: <span id="tele-tank-area" class="font-mono text-amber-400 font-bold">--</span></div>
-      <div>Back Clearance: <span id="tele-back-clear" class="font-mono text-emerald-400 font-bold">--</span></div>
-      <div>Left/Right Clear: <span id="tele-side-clear" class="font-mono text-emerald-400 font-bold">--</span></div>
+    <!-- Active Measurement Telemetry (No 0.00 bug) -->
+    <div class="bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-xl px-4 py-2 shadow-xl pointer-events-auto hidden lg:flex items-center space-x-6 text-xs text-slate-300">
+      <div>Tank Size: <span id="tele-tank-size" class="font-mono text-cyan-400 font-bold">Calculating...</span></div>
+      <div>Footprint Area: <span id="tele-tank-area" class="font-mono text-amber-400 font-bold">Calculating...</span></div>
+      <div>Back Clearance: <span id="tele-back-clear" class="font-mono text-emerald-400 font-bold">Calculating...</span></div>
+      <div>Side Clearance: <span id="tele-side-clear" class="font-mono text-emerald-400 font-bold">Calculating...</span></div>
     </div>
   </header>
 
@@ -105,25 +94,25 @@
     </div>
 
     <!-- ONE-CLICK DIMENSION SHOWCASE BUTTON -->
-    <div class="bg-gradient-to-r from-cyan-950/60 to-blue-950/60 border border-cyan-500/40 rounded-xl p-3.5 space-y-2">
+    <div class="bg-gradient-to-r from-cyan-950/70 to-blue-950/70 border border-cyan-500/50 rounded-xl p-3.5 space-y-2 shadow-lg">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Spatial Dimensions</h2>
-        <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Live HUD</span>
+        <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-semibold">Architectural Lines</span>
       </div>
-      <button id="btnToggleDimensions" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-xs font-bold text-white rounded-lg transition shadow-lg flex items-center justify-center space-x-2">
+      <button id="btnToggleDimensions" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-xs font-bold text-white rounded-lg transition shadow-md flex items-center justify-center space-x-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
-        <span id="lblDimensionsBtn">Hide Dimensions Throughout Room</span>
+        <span id="lblDimensionsBtn">Hide Dimension Lines & Arrows</span>
       </button>
-      <p class="text-[10px] text-slate-400 leading-tight">Shows live tank dimensions, footprint area, and clearance to walls and furniture.</p>
+      <p class="text-[10px] text-slate-300 leading-tight">Shows arrows & dimension lines for Room, Tank Size, and clearance boundaries.</p>
     </div>
 
     <!-- Separate Furniture Toggles -->
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3 space-y-2">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Room Furniture</h2>
-        <span class="text-[10px] text-cyan-400 font-mono">Individual</span>
+        <span class="text-[10px] text-cyan-400 font-mono">Independent</span>
       </div>
       <div class="grid grid-cols-3 gap-1.5">
         <button id="btnToggleTable" class="py-1.5 bg-emerald-600/90 hover:bg-emerald-500 active:scale-95 text-[11px] font-semibold text-white rounded-lg transition shadow text-center">
@@ -215,7 +204,7 @@
 
   <!-- Instructions Banner -->
   <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 px-4 py-2 rounded-xl text-xs text-slate-300 shadow-xl pointer-events-none hidden sm:block">
-    🖱️ <strong class="text-white">Left/Right Click + Drag:</strong> Orbit View | 📐 <strong class="text-white">Dimensions Button:</strong> Toggle measurements
+    📐 <strong class="text-white">Dimension Lines Active:</strong> Yellow/Cyan Lines indicate object size & room clearances
   </div>
 
   <script type="module">
@@ -247,17 +236,17 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x16181d);
 
-    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 50);
-    camera.position.set(0.65, 1.60, halfL - 0.4);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 50);
+    camera.position.set(1.4, 2.1, halfL - 0.2);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.target.set(DEFAULT_POS_X, 0.45, DEFAULT_POS_Z);
-    controls.maxDistance = 6.5;
+    controls.target.set(0.15, 0.55, -0.7);
+    controls.maxDistance = 7.0;
     controls.minDistance = 0.4;
 
-    // 2. MATERIALS
+    // 2. ROOM MATERIALS
     const wallMat = new THREE.MeshStandardMaterial({ color: 0xEDE9DF, roughness: 0.9 });
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x8C9299, roughness: 0.72, metalness: 0.06 });
     const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xF7F7F5, roughness: 0.96 });
@@ -381,58 +370,233 @@
     let baseScaleFactor = 1.0;
     let currentYawDegrees = 0;
 
-    // 6. DIMENSION VISUALIZER 3D RIG & OVERLAYS
-    const dimGroup = new THREE.Group();
-    scene.add(dimGroup);
+    // 6. ARCHITECTURAL 3D DIMENSION CALLOUT & ARROW ENGINE
+    const dimMasterGroup = new THREE.Group();
+    scene.add(dimMasterGroup);
 
-    // Tank footprint bounding floor outline
-    const footprintLineGeo = new THREE.BufferGeometry();
-    const footprintLineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
-    const footprintLine = new THREE.LineLoop(footprintLineGeo, footprintLineMat);
-    dimGroup.add(footprintLine);
+    // Helper: Creates high-contrast 3D billboard text sprites with solid badges
+    function createTextBadgeSprite(text, bgColor = '#0f172a', textColor = '#38bdf8', borderColor = '#0284c7') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
 
-    // Dynamic Clearance Measurement Lines
-    const createMeasureLine = (color) => {
-      const geo = new THREE.BufferGeometry();
-      const mat = new THREE.LineDashedMaterial({ color: color, dashSize: 0.08, gapSize: 0.04 });
-      const line = new THREE.Line(geo, mat);
-      dimGroup.add(line);
-      return line;
-    };
+      // Rounded badge background
+      ctx.fillStyle = bgColor;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.roundRect(8, 8, 512 - 16, 128 - 16, 24);
+      ctx.fill();
+      ctx.stroke();
 
-    const backClearanceLine = createMeasureLine(0x10b981); // Green to back window
-    const leftClearanceLine = createMeasureLine(0xf59e0b); // Orange to left desk
-    const rightClearanceLine = createMeasureLine(0xf59e0b); // Orange to right sink
+      // Sharp text
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 44px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 64);
 
-    // HTML Label Overlay helper
-    const dimOverlayContainer = document.getElementById('dimensionContainer');
-    const labelElements = {};
-
-    function getOrCreateLabel(id, colorClasses = "bg-slate-900/90 text-cyan-300 border-cyan-500/50") {
-      if (!labelElements[id]) {
-        const el = document.createElement('div');
-        el.id = id;
-        el.className = `dim-overlay backdrop-blur-md border px-2 py-0.5 rounded shadow-lg text-[11px] font-mono font-bold ${colorClasses}`;
-        dimOverlayContainer.appendChild(el);
-        labelElements[id] = el;
-      }
-      return labelElements[id];
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.9, 0.225, 1.0);
+      return sprite;
     }
 
-    function updateLabelPosition(el, worldPos) {
-      const p = worldPos.clone().project(camera);
-      // Behind camera check
-      if (p.z > 1) {
-        el.style.display = 'none';
-        return;
-      }
-      el.style.display = 'block';
-      const x = (p.x * 0.5 + 0.5) * window.innerWidth;
-      const y = (-(p.y * 0.5) + 0.5) * window.innerHeight;
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
+    // Helper: Updates an existing Sprite texture with new text
+    function updateSpriteText(sprite, text, bgColor = '#0f172a', textColor = '#38bdf8', borderColor = '#0284c7') {
+      if (!sprite || !sprite.material || !sprite.material.map) return;
+      const canvas = sprite.material.map.image;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 512, 128);
+
+      ctx.fillStyle = bgColor;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.roundRect(8, 8, 512 - 16, 128 - 16, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 44px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 64);
+
+      sprite.material.map.needsUpdate = true;
     }
 
+    // Helper: Creates architectural dimension line with end tick markers
+    function createDimensionLineGroup(colorHex = 0x38bdf8) {
+      const g = new THREE.Group();
+      const lineMat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2, depthTest: false });
+      const line = new THREE.Line(new THREE.BufferGeometry(), lineMat);
+      line.renderOrder = 999;
+      g.add(line);
+
+      // Start tick
+      const tick1 = new THREE.Line(new THREE.BufferGeometry(), lineMat);
+      tick1.renderOrder = 999;
+      g.add(tick1);
+
+      // End tick
+      const tick2 = new THREE.Line(new THREE.BufferGeometry(), lineMat);
+      tick2.renderOrder = 999;
+      g.add(tick2);
+
+      return {
+        group: g,
+        update: (start, end, tickDir = new THREE.Vector3(0, 1, 0), tickLen = 0.08) => {
+          line.geometry.setFromPoints([start, end]);
+          const t1_a = start.clone().addScaledVector(tickDir, tickLen);
+          const t1_b = start.clone().addScaledVector(tickDir, -tickLen);
+          tick1.geometry.setFromPoints([t1_a, t1_b]);
+
+          const t2_a = end.clone().addScaledVector(tickDir, tickLen);
+          const t2_b = end.clone().addScaledVector(tickDir, -tickLen);
+          tick2.geometry.setFromPoints([t2_a, t2_b]);
+        }
+      };
+    }
+
+    // Helper: Creates clearance dashed arrow lines with an arrowhead cone
+    function createClearanceArrow(colorHex = 0x10b981) {
+      const g = new THREE.Group();
+      const mat = new THREE.LineDashedMaterial({ color: colorHex, dashSize: 0.08, gapSize: 0.04, depthTest: false });
+      const line = new THREE.Line(new THREE.BufferGeometry(), mat);
+      line.renderOrder = 999;
+      g.add(line);
+
+      const coneGeo = new THREE.ConeGeometry(0.04, 0.12, 12);
+      const coneMat = new THREE.MeshBasicMaterial({ color: colorHex, depthTest: false });
+      const arrowCone = new THREE.Mesh(coneGeo, coneMat);
+      arrowCone.renderOrder = 999;
+      g.add(arrowCone);
+
+      return {
+        group: g,
+        update: (start, end) => {
+          line.geometry.setFromPoints([start, end]);
+          line.computeLineDistances();
+
+          // Position cone at target end
+          arrowCone.position.copy(end);
+          const dir = end.clone().sub(start);
+          if (dir.lengthSq() > 0.001) {
+            dir.normalize();
+            arrowCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+          }
+        }
+      };
+    }
+
+    // 7. BUILD FIXED ROOM DIMENSION MARKERS
+    const roomDimGroup = new THREE.Group();
+    dimMasterGroup.add(roomDimGroup);
+
+    // (A) Room Width Dimension Line (2.77m Front)
+    const roomWidthLine = createDimensionLineGroup(0x38bdf8);
+    roomDimGroup.add(roomWidthLine.group);
+    roomWidthLine.update(
+      new THREE.Vector3(-halfW, 0.02, halfL - 0.1),
+      new THREE.Vector3(halfW, 0.02, halfL - 0.1),
+      new THREE.Vector3(0, 0, 1),
+      0.08
+    );
+    const spriteRoomW = createTextBadgeSprite('Room Width: 2.77m', '#0f172a', '#38bdf8', '#0284c7');
+    spriteRoomW.position.set(0, 0.15, halfL - 0.1);
+    roomDimGroup.add(spriteRoomW);
+
+    // (B) Room Length Dimension Line (5.13m Right Wall)
+    const roomLengthLine = createDimensionLineGroup(0x38bdf8);
+    roomDimGroup.add(roomLengthLine.group);
+    roomLengthLine.update(
+      new THREE.Vector3(halfW - 0.05, 0.02, -halfL),
+      new THREE.Vector3(halfW - 0.05, 0.02, halfL),
+      new THREE.Vector3(1, 0, 0),
+      0.08
+    );
+    const spriteRoomL = createTextBadgeSprite('Room Length: 5.13m', '#0f172a', '#38bdf8', '#0284c7');
+    spriteRoomL.position.set(halfW - 0.05, 0.15, 0);
+    roomDimGroup.add(spriteRoomL);
+
+    // (C) Room Height Dimension Line (2.70m Corner)
+    const roomHeightLine = createDimensionLineGroup(0x38bdf8);
+    roomDimGroup.add(roomHeightLine.group);
+    roomHeightLine.update(
+      new THREE.Vector3(-halfW + 0.05, 0, -halfL + 0.05),
+      new THREE.Vector3(-halfW + 0.05, ROOM_H, -halfL + 0.05),
+      new THREE.Vector3(1, 0, 0),
+      0.08
+    );
+    const spriteRoomH = createTextBadgeSprite('Height: 2.70m', '#0f172a', '#38bdf8', '#0284c7');
+    spriteRoomH.position.set(-halfW + 0.35, ROOM_H / 2, -halfL + 0.05);
+    roomDimGroup.add(spriteRoomH);
+
+    // 8. DYNAMIC TANK MEASUREMENT RIG & CLEARANCES
+    const tankDimGroup = new THREE.Group();
+    dimMasterGroup.add(tankDimGroup);
+
+    // Tank Outline Box on Floor
+    const tankFootprintLine = new THREE.LineLoop(
+      new THREE.BufferGeometry(),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2, depthTest: false })
+    );
+    tankFootprintLine.renderOrder = 998;
+    tankDimGroup.add(tankFootprintLine);
+
+    // Tank X-Dimension (Length) Line
+    const tankLineX = createDimensionLineGroup(0x38bdf8);
+    tankDimGroup.add(tankLineX.group);
+    const spriteTankX = createTextBadgeSprite('L: 0.00m', '#0f172a', '#38bdf8', '#0284c7');
+    tankDimGroup.add(spriteTankX);
+
+    // Tank Z-Dimension (Depth) Line
+    const tankLineZ = createDimensionLineGroup(0x38bdf8);
+    tankDimGroup.add(tankLineZ.group);
+    const spriteTankZ = createTextBadgeSprite('W: 0.00m', '#0f172a', '#38bdf8', '#0284c7');
+    tankDimGroup.add(spriteTankZ);
+
+    // Tank Height Dimension Line
+    const tankLineY = createDimensionLineGroup(0x38bdf8);
+    tankDimGroup.add(tankLineY.group);
+    const spriteTankY = createTextBadgeSprite('H: 0.00m', '#0f172a', '#38bdf8', '#0284c7');
+    tankDimGroup.add(spriteTankY);
+
+    // Main Overhead Water Tank Spec Badge
+    const spriteTankMainSpec = createTextBadgeSprite('WATER TANK SPECS', '#022c22', '#34d399', '#059669');
+    spriteTankMainSpec.scale.set(1.4, 0.35, 1);
+    tankDimGroup.add(spriteTankMainSpec);
+
+    // Dynamic Clearances
+    const arrowBackClear = createClearanceArrow(0x10b981);
+    tankDimGroup.add(arrowBackClear.group);
+    const spriteBackClear = createTextBadgeSprite('Back Clear: 0.00m', '#064e3b', '#34d399', '#059669');
+    tankDimGroup.add(spriteBackClear);
+
+    const arrowLeftClear = createClearanceArrow(0xf59e0b);
+    tankDimGroup.add(arrowLeftClear.group);
+    const spriteLeftClear = createTextBadgeSprite('Desk Clear: 0.00m', '#451a03', '#fbbf24', '#d97706');
+    tankDimGroup.add(spriteLeftClear);
+
+    const arrowRightClear = createClearanceArrow(0xf59e0b);
+    tankDimGroup.add(arrowRightClear.group);
+    const spriteRightClear = createTextBadgeSprite('Sink Clear: 0.00m', '#451a03', '#fbbf24', '#d97706');
+    tankDimGroup.add(spriteRightClear);
+
+    // Furniture Labels
+    const spriteTable = createTextBadgeSprite('Desk: 0.75m × 1.40m', '#1e293b', '#cbd5e1', '#475569');
+    spriteTable.position.set(-halfW + 0.38, 0.82, -0.4);
+    dimMasterGroup.add(spriteTable);
+
+    const spriteSink = createTextBadgeSprite('Sink: 0.52m × 0.46m', '#1e293b', '#cbd5e1', '#475569');
+    spriteSink.position.set(halfW - 0.30, 1.05, -halfL + 0.65);
+    dimMasterGroup.add(spriteSink);
+
+    // Helper: Locks wheels to ground & re-runs all dimension updates
     function lockWheelsToFloor() {
       if (!activeMesh) return;
       positionGroup.position.y = 0;
@@ -441,7 +605,7 @@
       const box = new THREE.Box3().setFromObject(axisAlignGroup);
       const lowestY = box.min.y;
       positionGroup.position.y = -lowestY;
-      updateTelemetryAndDimensions();
+      updateDimensions();
     }
 
     function setAlignmentAngles(radX, radY, radZ) {
@@ -449,6 +613,123 @@
       lockWheelsToFloor();
     }
 
+    // Dynamic Calculation Engine
+    let showDimensions = true;
+
+    function updateDimensions() {
+      if (!activeMesh) return;
+      positionGroup.updateMatrixWorld(true);
+
+      const box = new THREE.Box3().setFromObject(axisAlignGroup);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+
+      const dimL = size.x; // Length
+      const dimH = size.y; // Height
+      const dimW = size.z; // Width/Depth
+      const footprintArea = dimL * dimW;
+      const totalRoomArea = ROOM_W * ROOM_L;
+      const areaPercent = (footprintArea / totalRoomArea) * 100;
+
+      const cX = positionGroup.position.x;
+      const cZ = positionGroup.position.z;
+      const hL = dimL / 2;
+      const hW = dimW / 2;
+
+      // 1. Clearances
+      const tankMinZ = cZ - hW;
+      const backWallZ = -halfL;
+      const distToBackWall = Math.max(0, tankMinZ - backWallZ);
+
+      const leftObstacleX = tableGroup.visible ? (-halfW + 0.75) : -halfW;
+      const distToLeft = Math.max(0, (cX - hL) - leftObstacleX);
+
+      const rightObstacleX = sinkGroup.visible ? (halfW - 0.52) : halfW;
+      const distToRight = Math.max(0, rightObstacleX - (cX + hL));
+
+      // 2. Update Top Telemetry Bar
+      document.getElementById('tele-tank-size').textContent = `${dimL.toFixed(2)}m (L) × ${dimW.toFixed(2)}m (W) × ${dimH.toFixed(2)}m (H)`;
+      document.getElementById('tele-tank-area').textContent = `${footprintArea.toFixed(2)} m² (${areaPercent.toFixed(1)}% of Room)`;
+      document.getElementById('tele-back-clear').textContent = `${distToBackWall.toFixed(2)}m to Blinds`;
+      document.getElementById('tele-side-clear').textContent = `L:${distToLeft.toFixed(2)}m | R:${distToRight.toFixed(2)}m`;
+
+      if (!showDimensions) return;
+
+      // 3. Update Floor Outline LineLoop
+      const floorPts = [
+        new THREE.Vector3(cX - hL, 0.015, cZ - hW),
+        new THREE.Vector3(cX + hL, 0.015, cZ - hW),
+        new THREE.Vector3(cX + hL, 0.015, cZ + hW),
+        new THREE.Vector3(cX - hL, 0.015, cZ + hW)
+      ];
+      tankFootprintLine.geometry.setFromPoints(floorPts);
+
+      // 4. Update Tank Measurement Lines & Sprites
+      // Length (X)
+      tankLineX.update(
+        new THREE.Vector3(cX - hL, 0.02, cZ + hW + 0.12),
+        new THREE.Vector3(cX + hL, 0.02, cZ + hW + 0.12),
+        new THREE.Vector3(0, 0, 1),
+        0.06
+      );
+      updateSpriteText(spriteTankX, `Tank Length: ${dimL.toFixed(2)}m`, '#0f172a', '#38bdf8', '#0284c7');
+      spriteTankX.position.set(cX, 0.12, cZ + hW + 0.12);
+
+      // Depth (Z)
+      tankLineZ.update(
+        new THREE.Vector3(cX + hL + 0.12, 0.02, cZ - hW),
+        new THREE.Vector3(cX + hL + 0.12, 0.02, cZ + hW),
+        new THREE.Vector3(1, 0, 0),
+        0.06
+      );
+      updateSpriteText(spriteTankZ, `Tank Depth: ${dimW.toFixed(2)}m`, '#0f172a', '#38bdf8', '#0284c7');
+      spriteTankZ.position.set(cX + hL + 0.12, 0.12, cZ);
+
+      // Height (Y)
+      tankLineY.update(
+        new THREE.Vector3(cX - hL - 0.1, 0.01, cZ + hW),
+        new THREE.Vector3(cX - hL - 0.1, dimH, cZ + hW),
+        new THREE.Vector3(0, 0, 1),
+        0.06
+      );
+      updateSpriteText(spriteTankY, `Height: ${dimH.toFixed(2)}m`, '#0f172a', '#38bdf8', '#0284c7');
+      spriteTankY.position.set(cX - hL - 0.35, dimH / 2, cZ + hW);
+
+      // Overhead Spec Badge
+      updateSpriteText(spriteTankMainSpec, `TANK: ${dimL.toFixed(2)}m × ${dimW.toFixed(2)}m | AREA: ${footprintArea.toFixed(2)}m²`, '#022c22', '#34d399', '#059669');
+      spriteTankMainSpec.position.set(cX, dimH + 0.32, cZ);
+
+      // 5. Update Clearances with Arrows & Badges
+      // Back to Window
+      arrowBackClear.update(
+        new THREE.Vector3(cX, 0.06, cZ - hW),
+        new THREE.Vector3(cX, 0.06, backWallZ)
+      );
+      updateSpriteText(spriteBackClear, `Clearance: ${distToBackWall.toFixed(2)}m to Blinds`, '#064e3b', '#34d399', '#059669');
+      spriteBackClear.position.set(cX, 0.18, (cZ - hW + backWallZ) / 2);
+
+      // Left Clearance
+      arrowLeftClear.update(
+        new THREE.Vector3(cX - hL, 0.06, cZ),
+        new THREE.Vector3(leftObstacleX, 0.06, cZ)
+      );
+      updateSpriteText(spriteLeftClear, `Left Clear: ${distToLeft.toFixed(2)}m`, '#451a03', '#fbbf24', '#d97706');
+      spriteLeftClear.position.set((cX - hL + leftObstacleX) / 2, 0.18, cZ);
+
+      // Right Clearance
+      arrowRightClear.update(
+        new THREE.Vector3(cX + hL, 0.06, cZ),
+        new THREE.Vector3(rightObstacleX, 0.06, cZ)
+      );
+      updateSpriteText(spriteRightClear, `Right Clear: ${distToRight.toFixed(2)}m`, '#451a03', '#fbbf24', '#d97706');
+      spriteRightClear.position.set((cX + hL + rightObstacleX) / 2, 0.18, cZ);
+
+      // Visibility sync for furniture tags
+      spriteTable.visible = tableGroup.visible;
+      spriteSink.visible = sinkGroup.visible;
+    }
+
+    // 9. MODEL SETUP HANDLER
     function setupUSSLModel(imported, sourceLabel) {
       while(axisAlignGroup.children.length > 0) axisAlignGroup.remove(axisAlignGroup.children[0]);
       
@@ -486,10 +767,10 @@
       document.getElementById('posZLabel').textContent = `${DEFAULT_POS_Z.toFixed(2)}m`;
       document.getElementById('posXSlider').value = DEFAULT_POS_X.toFixed(2);
       document.getElementById('posXLabel').textContent = `${DEFAULT_POS_X.toFixed(2)}m`;
-      updateTelemetryAndDimensions();
+      updateDimensions();
     }
 
-    // 7. AUTO STARTUP LOADER
+    // 10. AUTO STARTUP LOADER
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
       './USSL.glb',
@@ -503,7 +784,7 @@
       }
     );
 
-    // 8. FILE UPLOAD
+    // 11. FILE UPLOAD
     const cadFileInput = document.getElementById('cadFileInput');
     cadFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -546,151 +827,32 @@
           lockWheelsToFloor();
 
           document.getElementById('loadedModelName').textContent = `Loaded: ${file.name}`;
-          updateTelemetryAndDimensions();
+          updateDimensions();
         });
       }
     });
 
-    // 9. DYNAMIC CLEARANCE & DIMENSION UPDATER
-    let showDimensions = true;
-
-    function updateTelemetryAndDimensions() {
-      if (!activeMesh) return;
-      positionGroup.updateMatrixWorld(true);
-
-      const box = new THREE.Box3().setFromObject(axisAlignGroup);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-
-      const lengthW = size.x;
-      const heightH = size.y;
-      const depthD = size.z;
-      const footprintArea = lengthW * depthD;
-
-      // Real-time clearance calculations
-      const tankMinZ = positionGroup.position.z - depthD / 2;
-      const backWallZ = -halfL;
-      const distToBackWall = Math.max(0, tankMinZ - backWallZ);
-
-      // Left Obstacle (Table edge: X = -halfW + 0.75m = -0.635m)
-      const leftObstacleX = tableGroup.visible ? (-halfW + 0.75) : -halfW;
-      const distToLeft = Math.max(0, (positionGroup.position.x - lengthW / 2) - leftObstacleX);
-
-      // Right Obstacle (Sink edge: X = halfW - 0.52m = 0.865m)
-      const rightObstacleX = sinkGroup.visible ? (halfW - 0.52) : halfW;
-      const distToRight = Math.max(0, rightObstacleX - (positionGroup.position.x + lengthW / 2));
-
-      // Update Top HUD
-      document.getElementById('tele-tank-size').textContent = `${lengthW.toFixed(2)}m × ${depthD.toFixed(2)}m × ${heightH.toFixed(2)}m`;
-      document.getElementById('tele-tank-area').textContent = `${footprintArea.toFixed(2)} m²`;
-      document.getElementById('tele-back-clear').textContent = `${distToBackWall.toFixed(2)}m to Blinds`;
-      document.getElementById('tele-side-clear').textContent = `L:${distToLeft.toFixed(2)}m | R:${distToRight.toFixed(2)}m`;
-
-      // Update 3D Footprint outline on floor
-      const hX = lengthW / 2;
-      const hZ = depthD / 2;
-      const cX = positionGroup.position.x;
-      const cZ = positionGroup.position.z;
-
-      const floorPoints = [
-        new THREE.Vector3(cX - hX, 0.005, cZ - hZ),
-        new THREE.Vector3(cX + hX, 0.005, cZ - hZ),
-        new THREE.Vector3(cX + hX, 0.005, cZ + hZ),
-        new THREE.Vector3(cX - hX, 0.005, cZ + hZ)
-      ];
-      footprintLine.geometry.setFromPoints(floorPoints);
-
-      // Clearance guideline vertices
-      // Back line to window
-      backClearanceLine.geometry.setFromPoints([
-        new THREE.Vector3(cX, 0.05, cZ - hZ),
-        new THREE.Vector3(cX, 0.05, backWallZ)
-      ]);
-      backClearanceLine.computeLineDistances();
-
-      // Left line
-      leftClearanceLine.geometry.setFromPoints([
-        new THREE.Vector3(cX - hX, 0.05, cZ),
-        new THREE.Vector3(leftObstacleX, 0.05, cZ)
-      ]);
-      leftClearanceLine.computeLineDistances();
-
-      // Right line
-      rightClearanceLine.geometry.setFromPoints([
-        new THREE.Vector3(cX + hX, 0.05, cZ),
-        new THREE.Vector3(rightObstacleX, 0.05, cZ)
-      ]);
-      rightClearanceLine.computeLineDistances();
-
-      // Update Text Overlays
-      if (showDimensions) {
-        // Tank Dimensions Badge
-        const lblTank = getOrCreateLabel('lblTank', 'bg-cyan-950/90 text-cyan-300 border-cyan-400');
-        lblTank.innerHTML = `<span class="text-white font-bold">WATER TANK:</span> ${lengthW.toFixed(2)}m (W) × ${depthD.toFixed(2)}m (L) × ${heightH.toFixed(2)}m (H)<br><span class="text-amber-400 font-bold">FLOOR SPACE:</span> ${footprintArea.toFixed(2)} m² (${(footprintArea / (ROOM_W * ROOM_L) * 100).toFixed(1)}% of room)`;
-        updateLabelPosition(lblTank, new THREE.Vector3(cX, heightH + 0.25, cZ));
-
-        // Back Clearance Badge
-        const lblBack = getOrCreateLabel('lblBack', 'bg-emerald-950/90 text-emerald-300 border-emerald-500');
-        lblBack.textContent = `Clearance: ${distToBackWall.toFixed(2)}m to Blinds`;
-        updateLabelPosition(lblBack, new THREE.Vector3(cX, 0.15, (cZ - hZ + backWallZ) / 2));
-
-        // Left Clearance Badge
-        const lblLeft = getOrCreateLabel('lblLeft', 'bg-amber-950/90 text-amber-300 border-amber-500');
-        lblLeft.textContent = `${distToLeft.toFixed(2)}m`;
-        updateLabelPosition(lblLeft, new THREE.Vector3((cX - hX + leftObstacleX) / 2, 0.15, cZ));
-
-        // Right Clearance Badge
-        const lblRight = getOrCreateLabel('lblRight', 'bg-amber-950/90 text-amber-300 border-amber-500');
-        lblRight.textContent = `${distToRight.toFixed(2)}m`;
-        updateLabelPosition(lblRight, new THREE.Vector3((cX + hX + rightObstacleX) / 2, 0.15, cZ));
-
-        // Room Dimensions Badge
-        const lblRoom = getOrCreateLabel('lblRoom', 'bg-slate-900/90 text-slate-300 border-slate-600');
-        lblRoom.textContent = `Room: ${ROOM_W.toFixed(2)}m × ${ROOM_L.toFixed(2)}m | Total Area: ${(ROOM_W * ROOM_L).toFixed(2)} m²`;
-        updateLabelPosition(lblRoom, new THREE.Vector3(0, 0.05, halfL - 0.3));
-
-        // Furniture Dimensions Badges
-        if (tableGroup.visible) {
-          const lblTable = getOrCreateLabel('lblTable', 'bg-slate-900/80 text-amber-200 border-amber-800');
-          lblTable.textContent = `Desk: 0.75m × 1.40m`;
-          updateLabelPosition(lblTable, new THREE.Vector3(-halfW + 0.38, 0.85, -0.4));
-        } else if (labelElements['lblTable']) {
-          labelElements['lblTable'].style.display = 'none';
-        }
-
-        if (sinkGroup.visible) {
-          const lblSink = getOrCreateLabel('lblSink', 'bg-slate-900/80 text-cyan-200 border-cyan-800');
-          lblSink.textContent = `Sink: 0.52m × 0.46m`;
-          updateLabelPosition(lblSink, new THREE.Vector3(halfW - 0.30, 1.05, -halfL + 0.65));
-        } else if (labelElements['lblSink']) {
-          labelElements['lblSink'].style.display = 'none';
-        }
-      }
-    }
-
-    // 10. TOGGLE DIMENSIONS BUTTON HANDLER
+    // 12. TOGGLE DIMENSIONS BUTTON
     const btnToggleDimensions = document.getElementById('btnToggleDimensions');
     const lblDimensionsBtn = document.getElementById('lblDimensionsBtn');
 
     btnToggleDimensions.addEventListener('click', () => {
       showDimensions = !showDimensions;
-      dimGroup.visible = showDimensions;
+      dimMasterGroup.visible = showDimensions;
 
       if (showDimensions) {
-        lblDimensionsBtn.textContent = "Hide Dimensions Throughout Room";
-        dimOverlayContainer.style.opacity = '1';
+        lblDimensionsBtn.textContent = "Hide Dimension Lines & Arrows";
         btnToggleDimensions.classList.remove('bg-slate-700', 'hover:bg-slate-600');
         btnToggleDimensions.classList.add('bg-cyan-600', 'hover:bg-cyan-500');
-        updateTelemetryAndDimensions();
+        updateDimensions();
       } else {
-        lblDimensionsBtn.textContent = "Show All Dimensions Throughout Room";
-        dimOverlayContainer.style.opacity = '0';
+        lblDimensionsBtn.textContent = "Show Dimension Lines & Arrows";
         btnToggleDimensions.classList.remove('bg-cyan-600', 'hover:bg-cyan-500');
         btnToggleDimensions.classList.add('bg-slate-700', 'hover:bg-slate-600');
       }
     });
 
-    // 11. INDIVIDUAL FURNITURE BUTTON HANDLERS
+    // 13. INDIVIDUAL FURNITURE BUTTON HANDLERS
     function setupFurnitureToggle(btnId, group) {
       let isVisible = true;
       const btn = document.getElementById(btnId);
@@ -706,7 +868,7 @@
           btn.classList.remove('bg-emerald-600/90', 'hover:bg-emerald-500');
           btn.classList.add('bg-rose-700/80', 'hover:bg-rose-600');
         }
-        updateTelemetryAndDimensions();
+        updateDimensions();
       });
     }
 
@@ -714,7 +876,7 @@
     setupFurnitureToggle('btnToggleDrawers', drawersGroup);
     setupFurnitureToggle('btnToggleSink', sinkGroup);
 
-    // 12. SIDEBAR TOGGLE
+    // 14. SIDEBAR TOGGLE
     let sidebarOpen = true;
     const btnToggleSidebar = document.getElementById('btnToggleSidebar');
     const mainSidebar = document.getElementById('mainSidebar');
@@ -728,7 +890,7 @@
       }
     });
 
-    // 13. PRESET ALIGNMENT BUTTONS
+    // 15. PRESET ALIGNMENT BUTTONS
     document.getElementById('btnAlignPitchDown').addEventListener('click', () => {
       setAlignmentAngles(-Math.PI / 2, 0, 0);
     });
@@ -745,7 +907,7 @@
       lockWheelsToFloor();
     });
 
-    // 14. 90-DEGREE ROTATION STEPPER
+    // 16. 90-DEGREE ROTATION STEPPER
     document.getElementById('btnTurn90CW').addEventListener('click', () => {
       currentYawDegrees = (currentYawDegrees + 90) % 360;
       yawStepperGroup.rotation.y = THREE.MathUtils.degToRad(currentYawDegrees);
@@ -758,7 +920,7 @@
       lockWheelsToFloor();
     });
 
-    // 15. POSITION & SIZE SLIDERS WITH DYNAMIC DIMENSION UPDATES
+    // 17. POSITION & SIZE SLIDERS
     const posXSlider = document.getElementById('posXSlider');
     const posXLabel = document.getElementById('posXLabel');
     const posZSlider = document.getElementById('posZSlider');
@@ -771,14 +933,14 @@
       const val = parseFloat(e.target.value);
       posXLabel.textContent = `${val.toFixed(2)}m`;
       positionGroup.position.x = val;
-      updateTelemetryAndDimensions();
+      updateDimensions();
     });
 
     posZSlider.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       posZLabel.textContent = `${val.toFixed(2)}m`;
       positionGroup.position.z = val;
-      updateTelemetryAndDimensions();
+      updateDimensions();
     });
 
     sizeSlider.addEventListener('input', (e) => {
@@ -817,16 +979,10 @@
       }
     });
 
-    // 16. ANIMATION LOOP
+    // 18. ANIMATION LOOP
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
-
-      // Keep 3D HUD badges positioned smoothly as camera moves
-      if (showDimensions && activeMesh) {
-        updateTelemetryAndDimensions();
-      }
-
       renderer.render(scene, camera);
     }
     animate();
@@ -835,7 +991,6 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      if (showDimensions) updateTelemetryAndDimensions();
     });
   </script>
 </body>
