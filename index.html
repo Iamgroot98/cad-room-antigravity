@@ -37,34 +37,48 @@
       background: rgba(255,255,255,0.2);
       border-radius: 4px;
     }
+    .panel-hidden {
+      transform: translateX(-120%);
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="text-slate-100">
 
+  <!-- 3D Canvas -->
   <canvas id="viewport"></canvas>
 
-  <!-- Top Title Bar -->
-  <header class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
-    <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2.5 shadow-xl pointer-events-auto flex items-center space-x-3">
-      <div class="h-3 w-3 rounded-full bg-emerald-400"></div>
-      <div>
-        <h1 class="text-sm font-semibold tracking-wide text-white">USSL Wheeler Placement</h1>
-        <p class="text-xs text-slate-400">Room: 2.77m (W) × 5.13m (L) × 2.70m (H)</p>
+  <!-- Top Title & Toggle Bar -->
+  <header class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-20">
+    <div class="flex items-center space-x-2 pointer-events-auto">
+      <!-- Toggle Sidebar Visibility Button -->
+      <button id="btnToggleSidebar" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700/70 text-cyan-400 p-2.5 rounded-xl shadow-xl transition active:scale-95 flex items-center justify-center" title="Toggle Sidebar">
+        <svg id="sidebarIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2 shadow-xl flex items-center space-x-3">
+        <div class="h-3 w-3 rounded-full bg-emerald-400"></div>
+        <div>
+          <h1 class="text-sm font-semibold tracking-wide text-white">USSL Wheeler Placement</h1>
+          <p class="text-xs text-slate-400">Room: 2.77m (W) × 5.13m (L) × 2.70m (H)</p>
+        </div>
       </div>
     </div>
 
     <!-- Active Coordinates Display -->
     <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2 shadow-xl pointer-events-auto hidden md:flex items-center space-x-6 text-xs text-slate-300">
-      <div>X (Left/Right): <span id="tele-x" class="font-mono text-cyan-400 font-bold">0.40m</span></div>
-      <div>Z (Curtains): <span id="tele-z" class="font-mono text-cyan-400 font-bold">-0.95m</span></div>
+      <div>X: <span id="tele-x" class="font-mono text-cyan-400 font-bold">0.40m</span></div>
+      <div>Z: <span id="tele-z" class="font-mono text-cyan-400 font-bold">-0.95m</span></div>
       <div>Facing: <span id="tele-rot" class="font-mono text-amber-400 font-bold">0°</span></div>
-      <div>Scale: <span id="tele-scale" class="font-mono text-emerald-400 font-bold">1.85x</span></div>
-      <div>Status: <span class="font-mono text-emerald-400 font-bold">Wheels on Ground</span></div>
+      <div>Status: <span class="font-mono text-emerald-400 font-bold">Wheels on Floor</span></div>
     </div>
   </header>
 
-  <!-- Sidebar Placement Controls -->
-  <aside class="absolute left-4 bottom-4 top-24 w-80 bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-2xl p-4 shadow-2xl overflow-y-auto custom-scroll z-10 flex flex-col space-y-3.5">
+  <!-- Collapsible Sidebar Controls -->
+  <aside id="mainSidebar" class="absolute left-4 bottom-4 top-20 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-700/70 rounded-2xl p-4 shadow-2xl overflow-y-auto custom-scroll z-10 flex flex-col space-y-3.5 transition-all duration-300 ease-in-out">
     
     <!-- Model Status -->
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3">
@@ -80,70 +94,102 @@
       </label>
     </div>
 
-    <!-- 90-Degree Stepper & Standing Alignment -->
-    <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-3">
+    <!-- Individual Furniture Toggles -->
+    <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-2.5">
       <div class="flex items-center justify-between">
-        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">90° Step Orientation</h2>
-        <span class="text-[10px] text-amber-400 font-mono">No 360° Drift</span>
+        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Room Furniture</h2>
+        <span class="text-[10px] text-cyan-400 font-mono">Individual</span>
+      </div>
+      <p class="text-[11px] text-slate-400 leading-tight">Show or remove each piece separately:</p>
+      
+      <!-- Table Button -->
+      <button id="btnToggleTable" class="w-full py-1.5 px-3 bg-emerald-600/90 hover:bg-emerald-500 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow flex items-center justify-between">
+        <span>Office Table</span>
+        <span id="badgeTable" class="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono">Visible</span>
+      </button>
+
+      <!-- Drawers / Cabinet Button -->
+      <button id="btnToggleDrawers" class="w-full py-1.5 px-3 bg-emerald-600/90 hover:bg-emerald-500 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow flex items-center justify-between">
+        <span>Drawer Unit / Cabinet</span>
+        <span id="badgeDrawers" class="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono">Visible</span>
+      </button>
+
+      <!-- Sink Button -->
+      <button id="btnToggleSink" class="w-full py-1.5 px-3 bg-emerald-600/90 hover:bg-emerald-500 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow flex items-center justify-between">
+        <span>Wash Sink</span>
+        <span id="badgeSink" class="text-[10px] bg-black/30 px-1.5 py-0.5 rounded font-mono">Visible</span>
+      </button>
+    </div>
+
+    <!-- 1-Click Orientation Presets -->
+    <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-2.5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Stand on Wheels (Fix Side)</h2>
+        <span class="text-[10px] text-amber-400 font-mono">1-Click</span>
       </div>
       
-      <div class="grid grid-cols-2 gap-2">
-        <button id="btnTurn90CW" class="py-2 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-xs font-bold text-white rounded-lg transition shadow flex items-center justify-center space-x-1">
-          <span>Turn +90° ↷</span>
+      <div class="grid grid-cols-2 gap-1.5">
+        <button id="btnAlignPitchDown" class="py-2 bg-amber-600 hover:bg-amber-500 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow">
+          Pitch Forward (-90°)
         </button>
-        <button id="btnTurn90CCW" class="py-2 bg-slate-700 hover:bg-slate-600 active:scale-95 text-xs font-bold text-slate-200 rounded-lg transition shadow flex items-center justify-center space-x-1">
-          <span>Turn -90° ↶</span>
+        <button id="btnAlignPitchUp" class="py-2 bg-amber-600 hover:bg-amber-500 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow">
+          Pitch Back (+90°)
+        </button>
+        <button id="btnAlignRollLeft" class="py-2 bg-amber-700 hover:bg-amber-600 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow">
+          Roll Left (-90°)
+        </button>
+        <button id="btnAlignRollRight" class="py-2 bg-amber-700 hover:bg-amber-600 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow">
+          Roll Right (+90°)
+        </button>
+        <button id="btnAlignFlip180" class="py-2 bg-slate-700 hover:bg-slate-600 active:scale-95 text-xs font-semibold text-white rounded-lg transition shadow">
+          Invert 180°
+        </button>
+        <button id="btnAlignReset" class="py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-300 rounded-lg transition border border-slate-600">
+          Reset (0°)
         </button>
       </div>
 
-      <div class="pt-2 border-t border-slate-700/60 space-y-1.5">
-        <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider block">Align Wheels Downward</span>
-        <div class="grid grid-cols-2 gap-2">
-          <button id="btnPitch90" class="py-1.5 bg-amber-600/80 hover:bg-amber-500 text-xs font-semibold text-white rounded-lg transition">
-            Pitch 90°
-          </button>
-          <button id="btnRoll90" class="py-1.5 bg-amber-600/80 hover:bg-amber-500 text-xs font-semibold text-white rounded-lg transition">
-            Roll 90°
-          </button>
-        </div>
-        <button id="btnSnapWheels" class="w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-semibold text-cyan-300 rounded-lg transition">
-          ⚓ Re-snap Wheels to Floor
+      <button id="btnSnapWheels" class="w-full py-1.5 bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white rounded-lg transition shadow">
+        ⚓ Re-Snap Wheels to Floor
+      </button>
+    </div>
+
+    <!-- 90-Degree Stepper -->
+    <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-2">
+      <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Turn 90° (Direction)</h2>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btnTurn90CW" class="py-2 bg-cyan-700 hover:bg-cyan-600 active:scale-95 text-xs font-bold text-white rounded-lg transition shadow">
+          Turn +90° ↷
+        </button>
+        <button id="btnTurn90CCW" class="py-2 bg-slate-700 hover:bg-slate-600 active:scale-95 text-xs font-bold text-slate-200 rounded-lg transition shadow">
+          Turn -90° ↶
         </button>
       </div>
     </div>
 
-    <!-- Position & Movement Sliders (Defaults matching your exact inputs) -->
+    <!-- Position & Movement Sliders -->
     <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3.5 space-y-3">
       <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Move Position</h2>
       
-      <!-- Forward / Backward towards Curtains (Default: -0.95m) -->
+      <!-- Depth Slider -->
       <div>
         <div class="flex justify-between text-xs mb-1">
           <span class="text-slate-400">Position ↔ Curtains (Depth)</span>
           <span id="posZLabel" class="font-mono text-cyan-400 font-bold">-0.95m</span>
         </div>
         <input type="range" id="posZSlider" min="-2.1" max="1.5" step="0.05" value="-0.95" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
-        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
-          <span>Curtains (-2.1m)</span>
-          <span>Door (+1.5m)</span>
-        </div>
       </div>
 
-      <!-- Left / Right (Default: 0.40m) -->
+      <!-- Left / Right Slider -->
       <div>
         <div class="flex justify-between text-xs mb-1">
           <span class="text-slate-400">Position ↔ Left / Right</span>
           <span id="posXLabel" class="font-mono text-cyan-400 font-bold">0.40m</span>
         </div>
         <input type="range" id="posXSlider" min="-0.75" max="0.75" step="0.05" value="0.40" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
-        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
-          <span>Desk (-0.75m)</span>
-          <span>Center</span>
-          <span>Sink (+0.75m)</span>
-        </div>
       </div>
 
-      <!-- Scale / Size (Default: 1.85x) -->
+      <!-- Scale / Size Slider -->
       <div>
         <div class="flex justify-between text-xs mb-1">
           <span class="text-slate-400">Scale / Size</span>
@@ -160,7 +206,7 @@
 
   <!-- Instructions Banner -->
   <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 px-4 py-2 rounded-xl text-xs text-slate-300 shadow-xl pointer-events-none hidden sm:block">
-    🖱️ <strong class="text-white">Left/Right Click + Drag Background:</strong> Orbit View to inspect wheeler placement
+    🖱️ <strong class="text-white">Left/Right Click + Drag:</strong> Orbit View | 📂 <strong class="text-white">Top-Left Button:</strong> Toggle Sidebar
   </div>
 
   <script type="module">
@@ -169,14 +215,13 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
-    // 1. EXACT ROOM DIMENSIONS (2.77m W x 5.13m L x 2.70m H)
+    // 1. ROOM DIMENSIONS
     const ROOM_W = 2.77;
     const ROOM_L = 5.13;
     const ROOM_H = 2.70;
     const halfW = ROOM_W / 2;
     const halfL = ROOM_L / 2;
 
-    // DEFAULT TARGET VALUES REQUESTED
     const DEFAULT_POS_X = 0.40;
     const DEFAULT_POS_Z = -0.95;
     const DEFAULT_SCALE_MULT = 1.85;
@@ -203,7 +248,7 @@
     controls.maxDistance = 6.5;
     controls.minDistance = 0.4;
 
-    // 2. ROOM MATERIALS MATCHING PHOTOS
+    // 2. MATERIALS
     const wallMat = new THREE.MeshStandardMaterial({ color: 0xEDE9DF, roughness: 0.9 });
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x8C9299, roughness: 0.72, metalness: 0.06 });
     const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xF7F7F5, roughness: 0.96 });
@@ -214,19 +259,18 @@
 
     const roomGroup = new THREE.Group();
 
-    // Floor
+    // Floor & Ceiling
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_L), floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     roomGroup.add(floor);
 
-    // Ceiling
     const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_L), ceilingMat);
     ceiling.rotation.x = Math.PI / 2;
     ceiling.position.y = ROOM_H;
     roomGroup.add(ceiling);
 
-    // Back wall & Blinds
+    // Walls & Blinds
     const backWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_H), wallMat);
     backWall.position.set(0, ROOM_H / 2, -halfL);
     backWall.receiveShadow = true;
@@ -238,7 +282,6 @@
     windowBlind.receiveShadow = true;
     roomGroup.add(windowBlind);
 
-    // Left & Right walls
     const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_L, ROOM_H), wallMat);
     leftWall.position.set(-halfW, ROOM_H / 2, 0);
     leftWall.rotation.y = Math.PI / 2;
@@ -251,13 +294,13 @@
     rightWall.receiveShadow = true;
     roomGroup.add(rightWall);
 
-    // Baseboard
     const baseboardGeo = new THREE.BoxGeometry(ROOM_W, 0.08, 0.02);
     const bbBack = new THREE.Mesh(baseboardGeo, trimMat);
     bbBack.position.set(0, 0.04, -halfL + 0.01);
     roomGroup.add(bbBack);
 
-    // Desk on Left Wall
+    // 3. SEPARATE FURNITURE GROUPS
+    // (A) Table Group
     const tableGroup = new THREE.Group();
     const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 1.40), deskTopMat);
     tableTop.position.set(0, 0.72, 0);
@@ -270,17 +313,20 @@
     tablePedestal.castShadow = true;
     tablePedestal.receiveShadow = true;
     tableGroup.add(tablePedestal);
-
-    const fileCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.70, 1.35, 0.50), deskBodyMat);
-    fileCabinet.position.set(0, 0.675, -0.98);
-    fileCabinet.castShadow = true;
-    fileCabinet.receiveShadow = true;
-    tableGroup.add(fileCabinet);
-
     tableGroup.position.set(-halfW + 0.375, 0, -0.4);
     roomGroup.add(tableGroup);
 
-    // Sink on right wall positioned next to curtains
+    // (B) Drawers / Cabinet Group
+    const drawersGroup = new THREE.Group();
+    const fileCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.70, 1.35, 0.50), deskBodyMat);
+    fileCabinet.position.set(0, 0.675, 0);
+    fileCabinet.castShadow = true;
+    fileCabinet.receiveShadow = true;
+    drawersGroup.add(fileCabinet);
+    drawersGroup.position.set(-halfW + 0.375, 0, -0.4 - 0.98);
+    roomGroup.add(drawersGroup);
+
+    // (C) Sink Group
     const sinkGroup = new THREE.Group();
     const basin = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.22, 0.46), new THREE.MeshStandardMaterial({ color: 0xF3F4F6, roughness: 0.2 }));
     basin.position.set(0, 0.85, 0);
@@ -291,13 +337,12 @@
     pedestal.position.set(0, 0.40, 0);
     pedestal.castShadow = true;
     sinkGroup.add(pedestal);
-
     sinkGroup.position.set(halfW - 0.30, 0, -halfL + 0.65);
     roomGroup.add(sinkGroup);
 
     scene.add(roomGroup);
 
-    // 3. LIGHTING
+    // 4. LIGHTING
     const ambientLight = new THREE.AmbientLight(0xfff7ed, 0.95);
     scene.add(ambientLight);
 
@@ -317,10 +362,10 @@
     scene.add(windowDaylight);
     scene.add(windowDaylight.target);
 
-    // 4. MODEL HIERARCHY
-    const positionGroup = new THREE.Group(); // Handles X (0.40m) & Z (-0.95m)
-    const yawStepperGroup = new THREE.Group(); // Handles clean 90° turns
-    const axisAlignGroup = new THREE.Group(); // Handles wheels facing floor
+    // 5. MODEL HIERARCHY
+    const positionGroup = new THREE.Group();
+    const yawStepperGroup = new THREE.Group();
+    const axisAlignGroup = new THREE.Group();
 
     positionGroup.add(yawStepperGroup);
     yawStepperGroup.add(axisAlignGroup);
@@ -330,34 +375,35 @@
     let baseScaleFactor = 1.0;
     let currentYawDegrees = 0;
 
-    // Helper: Locks the lowest point of wheels/legs flat to Y = 0 (Floor)
     function lockWheelsToFloor() {
       if (!activeMesh) return;
+      positionGroup.position.y = 0;
       positionGroup.updateMatrixWorld(true);
+      
       const box = new THREE.Box3().setFromObject(axisAlignGroup);
       const lowestY = box.min.y;
-      
-      // Shift so bottom of wheels touches floor
-      positionGroup.position.y -= lowestY;
+      positionGroup.position.y = -lowestY;
+      updateTelemetry();
     }
 
-    // Process USSL.glb model with requested initial defaults
+    function setAlignmentAngles(radX, radY, radZ) {
+      axisAlignGroup.rotation.set(radX, radY, radZ);
+      lockWheelsToFloor();
+    }
+
     function setupUSSLModel(imported, sourceLabel) {
       while(axisAlignGroup.children.length > 0) axisAlignGroup.remove(axisAlignGroup.children[0]);
       
-      // Reset groups
-      axisAlignGroup.rotation.set(-Math.PI / 2, 0, 0);
+      axisAlignGroup.rotation.set(0, 0, 0);
       yawStepperGroup.rotation.set(0, 0, 0);
       currentYawDegrees = 0;
 
       const box = new THREE.Box3().setFromObject(imported);
       const center = box.getCenter(new THREE.Vector3());
-      imported.position.sub(center); // Center pivot
+      imported.position.sub(center);
 
       const maxDim = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
       baseScaleFactor = 0.85 / (maxDim || 1);
-      
-      // Apply initial 1.85x scale
       imported.scale.setScalar(baseScaleFactor * DEFAULT_SCALE_MULT);
 
       imported.traverse(child => {
@@ -371,10 +417,7 @@
       activeMesh = imported;
       axisAlignGroup.add(imported);
 
-      // Auto-flip 180 degrees so wheels stand down on the floor by default
-      axisAlignGroup.rotation.set(Math.PI, 0, 0);
-
-      // Apply initial Position: X = 0.40m, Z = -0.95m
+      axisAlignGroup.rotation.set(-Math.PI / 2, 0, 0);
       positionGroup.position.set(DEFAULT_POS_X, 0, DEFAULT_POS_Z);
       lockWheelsToFloor();
 
@@ -388,7 +431,7 @@
       updateTelemetry();
     }
 
-    // 5. AUTOMATIC STARTUP LOADER FOR "USSL.glb"
+    // 6. AUTO STARTUP LOADER
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
       './USSL.glb',
@@ -397,12 +440,12 @@
       },
       undefined,
       (err) => {
-        console.warn('Could not auto-load ./USSL.glb from root. Please upload via button.', err);
+        console.warn('USSL.glb not found in repo root. Upload via sidebar.', err);
         document.getElementById('loadedModelName').textContent = "USSL.glb not found in repo. Upload below:";
       }
     );
 
-    // 6. FILE UPLOAD (FOR LOCAL GLB/STL)
+    // 7. FILE UPLOAD
     const cadFileInput = document.getElementById('cadFileInput');
     cadFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -426,7 +469,6 @@
           geometry.center();
           geometry.computeVertexNormals();
           geometry.computeBoundingBox();
-          geometry.rotateX(-Math.PI / 2);
 
           const bbox = geometry.boundingBox;
           const maxDim = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
@@ -441,6 +483,7 @@
 
           activeMesh = mesh;
           axisAlignGroup.add(mesh);
+          axisAlignGroup.rotation.set(-Math.PI / 2, 0, 0);
           positionGroup.position.set(DEFAULT_POS_X, 0, DEFAULT_POS_Z);
           lockWheelsToFloor();
 
@@ -450,7 +493,70 @@
       }
     });
 
-    // 7. 90-DEGREE ROTATION STEPPER
+    // 8. INDIVIDUAL FURNITURE BUTTON HANDLERS
+    function setupFurnitureToggle(btnId, badgeId, group, labelName) {
+      let isVisible = true;
+      const btn = document.getElementById(btnId);
+      const badge = document.getElementById(badgeId);
+
+      btn.addEventListener('click', () => {
+        isVisible = !isVisible;
+        group.visible = isVisible;
+
+        if (isVisible) {
+          badge.textContent = "Visible";
+          btn.classList.remove('bg-rose-700/80', 'hover:bg-rose-600');
+          btn.classList.add('bg-emerald-600/90', 'hover:bg-emerald-500');
+        } else {
+          badge.textContent = "Removed";
+          btn.classList.remove('bg-emerald-600/90', 'hover:bg-emerald-500');
+          btn.classList.add('bg-rose-700/80', 'hover:bg-rose-600');
+        }
+      });
+    }
+
+    setupFurnitureToggle('btnToggleTable', 'badgeTable', tableGroup, 'Table');
+    setupFurnitureToggle('btnToggleDrawers', 'badgeDrawers', drawersGroup, 'Drawers');
+    setupFurnitureToggle('btnToggleSink', 'badgeSink', sinkGroup, 'Sink');
+
+    // 9. SIDEBAR TOGGLE
+    let sidebarOpen = true;
+    const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+    const mainSidebar = document.getElementById('mainSidebar');
+
+    btnToggleSidebar.addEventListener('click', () => {
+      sidebarOpen = !sidebarOpen;
+      if (sidebarOpen) {
+        mainSidebar.classList.remove('panel-hidden');
+      } else {
+        mainSidebar.classList.add('panel-hidden');
+      }
+    });
+
+    // 10. PRESET ALIGNMENT BUTTONS
+    document.getElementById('btnAlignPitchDown').addEventListener('click', () => {
+      setAlignmentAngles(-Math.PI / 2, 0, 0);
+    });
+    document.getElementById('btnAlignPitchUp').addEventListener('click', () => {
+      setAlignmentAngles(Math.PI / 2, 0, 0);
+    });
+    document.getElementById('btnAlignRollLeft').addEventListener('click', () => {
+      setAlignmentAngles(0, 0, -Math.PI / 2);
+    });
+    document.getElementById('btnAlignRollRight').addEventListener('click', () => {
+      setAlignmentAngles(0, 0, Math.PI / 2);
+    });
+    document.getElementById('btnAlignFlip180').addEventListener('click', () => {
+      setAlignmentAngles(Math.PI, 0, 0);
+    });
+    document.getElementById('btnAlignReset').addEventListener('click', () => {
+      setAlignmentAngles(0, 0, 0);
+    });
+    document.getElementById('btnSnapWheels').addEventListener('click', () => {
+      lockWheelsToFloor();
+    });
+
+    // 11. 90-DEGREE ROTATION STEPPER
     document.getElementById('btnTurn90CW').addEventListener('click', () => {
       currentYawDegrees = (currentYawDegrees + 90) % 360;
       yawStepperGroup.rotation.y = THREE.MathUtils.degToRad(currentYawDegrees);
@@ -465,22 +571,7 @@
       updateTelemetry();
     });
 
-    // Stand on wheels controls
-    document.getElementById('btnPitch90').addEventListener('click', () => {
-      axisAlignGroup.rotation.x += Math.PI / 2;
-      lockWheelsToFloor();
-    });
-
-    document.getElementById('btnRoll90').addEventListener('click', () => {
-      axisAlignGroup.rotation.z += Math.PI / 2;
-      lockWheelsToFloor();
-    });
-
-    document.getElementById('btnSnapWheels').addEventListener('click', () => {
-      lockWheelsToFloor();
-    });
-
-    // 8. POSITION & SIZE SLIDERS
+    // 12. POSITION & SIZE SLIDERS
     const posXSlider = document.getElementById('posXSlider');
     const posXLabel = document.getElementById('posXLabel');
     const posZSlider = document.getElementById('posZSlider');
@@ -489,7 +580,6 @@
     const scaleLabel = document.getElementById('scaleLabel');
     const btnFitFreeSpace = document.getElementById('btnFitFreeSpace');
 
-    // Move Left / Right
     posXSlider.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       posXLabel.textContent = `${val.toFixed(2)}m`;
@@ -497,7 +587,6 @@
       updateTelemetry();
     });
 
-    // Move Towards Curtains / Door
     posZSlider.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       posZLabel.textContent = `${val.toFixed(2)}m`;
@@ -505,7 +594,6 @@
       updateTelemetry();
     });
 
-    // Resize Scale
     sizeSlider.addEventListener('input', (e) => {
       const multiplier = parseFloat(e.target.value);
       scaleLabel.textContent = `${multiplier.toFixed(2)}x`;
@@ -516,7 +604,6 @@
       updateTelemetry();
     });
 
-    // One-click Fit to Free Space
     btnFitFreeSpace.addEventListener('click', () => {
       if (activeMesh) {
         positionGroup.updateMatrixWorld(true);
@@ -549,12 +636,9 @@
       document.getElementById('tele-x').textContent = `${positionGroup.position.x.toFixed(2)}m`;
       document.getElementById('tele-z').textContent = `${positionGroup.position.z.toFixed(2)}m`;
       document.getElementById('tele-rot').textContent = `${currentYawDegrees}°`;
-      if (document.getElementById('tele-scale')) {
-        document.getElementById('tele-scale').textContent = `${parseFloat(sizeSlider.value).toFixed(2)}x`;
-      }
     }
 
-    // 9. ANIMATION LOOP
+    // 13. ANIMATION LOOP
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
