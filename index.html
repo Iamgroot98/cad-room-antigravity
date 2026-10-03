@@ -346,7 +346,7 @@
       while(axisAlignGroup.children.length > 0) axisAlignGroup.remove(axisAlignGroup.children[0]);
       
       // Reset groups
-      axisAlignGroup.rotation.set(0, 0, 0);
+      axisAlignGroup.rotation.set(Math.PI / 2, 0, 0);
       yawStepperGroup.rotation.set(0, 0, 0);
       currentYawDegrees = 0;
 
